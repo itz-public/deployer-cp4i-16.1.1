@@ -1,0 +1,213 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: deploy-cp4i
+  namespace: default
+spec:
+  params:
+    - default: 'false'
+      description: Enable App Connect Designer
+      name: ENABLE_APP_CONNECT_DESIGNER
+      type: string
+    - default: 'false'
+      description: Enable App Connect Dashboard
+      name: ENABLE_APP_CONNECT_DASHBOARD
+      type: string
+    - default: 'false'
+      description: Enable Asset Repo
+      name: ENABLE_ASSET_REPO
+      type: string
+    - default: 'false'
+      description: Enable Tracing
+      name: ENABLE_TRACING
+      type: string
+    - default: 'false'
+      description: Enable MQ in single-instance configuration
+      name: ENABLE_MQ_SINGLE
+      type: string
+    - default: 'false'
+      description: Enable API Connect
+      name: ENABLE_API_CONNECT
+      type: string
+    - default: 'false'
+      description: Enable MQ in High-Availability configuration
+      name: ENABLE_MQ_HA
+      type: string
+    - default: 'false'
+      description: Enable Event Streams
+      name: ENABLE_EVENT_STREAMS
+      type: string
+    - default: 'false'
+      description: Enable DataPower Gateway
+      name: ENABLE_DATAPOWER_GATEWAY
+      type: string
+    - default: 'false'
+      description: Enable Aspera High-speed Transfer Server
+      name: ENABLE_ASPERA_HSTS
+      type: string
+    - default: integration
+      description: Namespace to place Platform UI
+      name: CP4I_NAMESPACE
+      type: string
+    - default: 2022.4.1-4
+      description: Version of CP4I Platform UI to deploy
+      name: CP4I_VERSION
+      type: string
+  tasks:
+    - name: get-entitlement-key
+      params:
+        - name: KEY_ID
+          value: 968d7819-f2c5-7b67-c420-3c6bfd51521e
+        - name: SECRETS_MANAGER_ENDPOINT_URL
+          value: >-
+            https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
+      taskRef:
+        kind: Task
+        name: ibmcloud-secrets-manager-get
+    - name: platform-ui-subscription
+      params:
+        - name: SCRIPT
+          value: >-
+            oc apply -f - <<EOF
+
+            apiVersion: operators.coreos.com/v1alpha1
+
+            kind: Subscription
+
+            metadata:
+              name: ibm-integration-platform-navigator
+              namespace: openshift-operators
+            spec:
+              channel: v7.0
+              name: ibm-integration-platform-navigator
+              source: ibm-integration-platform-navigator-catalog
+              sourceNamespace: openshift-marketplace
+            EOF
+
+
+            while ! oc wait crd integrationassemblies.integration.ibm.com
+            --timeout=-1s --for=condition=Established  2>/dev/null; do sleep 30;
+            done
+
+            while ! oc wait crd platformnavigators.integration.ibm.com
+            --timeout=-1s --for=condition=Established  2>/dev/null; do sleep 30;
+            done
+        - name: VERSION
+          value: latest
+      runAfter:
+        - platform-ui-catalog-source
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      workspaces:
+        - name: manifest-dir
+          workspace: ibm-pak-manifests
+    - name: platform-ui-catalog-source
+      params:
+        - name: SCRIPT
+          value: >-
+            export CASE_NAME=ibm-integration-platform-navigator
+
+            export CASE_VERSION=7.0.4
+
+            export ARCH=amd64
+
+
+            oc ibm-pak get ${CASE_NAME} --version ${CASE_VERSION}
+
+            oc ibm-pak generate mirror-manifests ${CASE_NAME} icr.io --version
+            ${CASE_VERSION}
+
+
+            cat
+            ~/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/catalog-sources.yaml
+
+
+            oc apply -f
+            ~/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/catalog-sources.yaml
+
+
+            export STATUS=$(oc get CatalogSource
+            ibm-integration-platform-navigator-catalog -n openshift-marketplace
+            -o json | jq '.status.connectionState.lastObservedState')
+
+            echo "Waiting for catalog source to be ready"
+
+            until [[ $STATUS == "\"READY\"" ]]
+
+            do
+                    echo $STATUS
+                    export STATUS=$(oc get CatalogSource ibm-integration-platform-navigator-catalog -n openshift-marketplace -o json | jq '.status.connectionState.lastObservedState')
+                    sleep 2
+            done
+
+            echo "Platform navigator catalog source is ready."
+      runAfter:
+        - get-entitlement-key
+      taskRef:
+        kind: ClusterTask
+        name: ibm-pak
+      workspaces:
+        - name: manifest-dir
+          workspace: ibm-pak-manifests
+    - name: platform-ui-deploy
+      params:
+        - name: SCRIPT
+          value: >-
+            echo "Creating a new platform UI instance"
+
+            oc apply -f - <<EOF
+
+            apiVersion: integration.ibm.com/v1beta1
+
+            kind: PlatformNavigator
+
+            metadata:
+              name: integration-quickstart
+              namespace: $(params.CP4I_NAMESPACE)
+            spec:
+              license:
+                accept: true
+                license: L-RJON-CJR2RX
+              mqDashboard: true
+              replicas: 2
+              storage:
+                class: ocs-storagecluster-cephfs
+              version: $(params.CP4I_VERSION)
+            EOF
+
+
+            echo "Waiting for Platform UI to be deployed..."
+
+            while ! oc wait --for=condition=Ready
+            PlatformNavigator/integration-quickstart -n
+            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
+            echo "Platform UI is deployed"
+        - name: VERSION
+          value: latest
+      runAfter:
+        - platform-ui-namespace
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: platform-ui-namespace
+      params:
+        - name: SCRIPT
+          value: |-
+            echo "Creating a new namespace called $(params.CP4I_NAMESPACE)"
+            oc apply -f - <<EOF
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: $(params.CP4I_NAMESPACE)
+            EOF
+        - name: VERSION
+          value: latest
+      runAfter:
+        - platform-ui-subscription
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+  workspaces:
+    - name: ibm-pak-manifests

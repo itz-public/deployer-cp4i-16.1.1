@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: deploy-cp4i-
+  namespace: default
+spec:
+  pipelineRef:
+    name: deploy-cp4i
+  serviceAccountName: pipeline
+  timeout: 6h0m0s
+  workspaces:
+    - name: ibm-pak-manifests
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 1Gi
+          storageClassName: ocs-storagecluster-cephfs
+          volumeMode: Filesystem
+        status: {}
