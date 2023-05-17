@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: deploy-cp4i-platform-ui
+  name: cp4i-platform-ui
   namespace: default
 spec:
   finally:
