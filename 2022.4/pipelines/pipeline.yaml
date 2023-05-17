@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: deploy-cp4i
+  name: deploy-cp4i-platform-ui
   namespace: default
 spec:
   finally:
@@ -26,46 +26,6 @@ spec:
         kind: ClusterTask
         name: openshift-client
   params:
-    - default: 'false'
-      description: Enable App Connect Designer
-      name: ENABLE_APP_CONNECT_DESIGNER
-      type: string
-    - default: 'false'
-      description: Enable App Connect Dashboard
-      name: ENABLE_APP_CONNECT_DASHBOARD
-      type: string
-    - default: 'false'
-      description: Enable Asset Repo
-      name: ENABLE_ASSET_REPO
-      type: string
-    - default: 'false'
-      description: Enable Tracing
-      name: ENABLE_TRACING
-      type: string
-    - default: 'false'
-      description: Enable MQ in single-instance configuration
-      name: ENABLE_MQ_SINGLE
-      type: string
-    - default: 'false'
-      description: Enable API Connect
-      name: ENABLE_API_CONNECT
-      type: string
-    - default: 'false'
-      description: Enable MQ in High-Availability configuration
-      name: ENABLE_MQ_HA
-      type: string
-    - default: 'false'
-      description: Enable Event Streams
-      name: ENABLE_EVENT_STREAMS
-      type: string
-    - default: 'false'
-      description: Enable DataPower Gateway
-      name: ENABLE_DATAPOWER_GATEWAY
-      type: string
-    - default: 'false'
-      description: Enable Aspera High-speed Transfer Server
-      name: ENABLE_ASPERA_HSTS
-      type: string
     - default: integration
       description: Namespace to place Platform UI
       name: CP4I_NAMESPACE
