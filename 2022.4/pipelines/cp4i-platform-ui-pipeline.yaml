@@ -126,7 +126,7 @@ spec:
       runAfter:
         - get-entitlement-key
       taskRef:
-        kind: ClusterTask
+        kind: Task
         name: ibm-pak
       workspaces:
         - name: manifest-dir
