@@ -10,4 +10,4 @@ metadata:
 spec:
   type: asset
   lifecycle: experimental
-  owner: group:ibm/ibm-technology-zone
+  owner: ibm/ibm-technology-zone
