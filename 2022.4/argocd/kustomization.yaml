@@ -1,0 +1,4 @@
+resources:
+  - bootstrap.yaml
+  - dependencies.yaml
+  - deploy.yaml
