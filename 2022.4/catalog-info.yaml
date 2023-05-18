@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: deployer-cp4i-2022.4
+  annotations:
+    github.com/project-slug: cloud-native-toolkit/deployer-cp4i
+    techzone.ibm.com/pipeline: https://github.com/cloud-native-toolkit/deployer-cp4i.git
+    techzone.ibm.com/pipeline-deploy: oc apply -f 2022.4/argocd/bootstrap.yaml
+  description: A collection of Tekton pipelines to deploy IBM Cloud Pak for Integration capabilities
+  title: Deployer CP4I 2022.4 pipelines
+spec:
+  type: asset
+  lifecycle: experimental
+  owner: group:ibm/ibm-technology-zone
