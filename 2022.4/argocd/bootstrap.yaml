@@ -7,7 +7,7 @@ spec:
   project: default
   destination:
     server: https://kubernetes.default.svc
-    namespace: openshift-gitops
+    namespace: default
   source:
     path: 2022.4/argocd
     repoURL: 'https://github.ibm.com/cloud-native-toolkit/deployer-cp4i.git'

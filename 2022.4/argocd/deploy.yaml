@@ -11,7 +11,7 @@ spec:
   project: default
   destination:
     server: https://kubernetes.default.svc
-    namespace: openshift-gitops
+    namespace: default
   sources:
     - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
       targetRevision: main
