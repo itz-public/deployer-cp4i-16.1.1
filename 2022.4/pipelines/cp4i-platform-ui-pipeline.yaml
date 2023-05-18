@@ -23,8 +23,8 @@ spec:
         - name: VERSION
           value: latest
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
+        kind: Task
+        name: ibm-pak
   params:
     - default: integration
       description: Namespace to place Platform UI
