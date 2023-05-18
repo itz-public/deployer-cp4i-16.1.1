@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: deployer-cp4i
+  name: deployer-cp4i-pipelines
   annotations:
     github.com/project-slug: cloud-native-toolkit/deployer-cp4i
   description: A collection of Tekton pipelines to deploy IBM Cloud Pak for Integration capabilities
@@ -11,3 +11,13 @@ spec:
   type: asset
   lifecycle: experimental
   owner: ibm/ibm-technology-zone
+---
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: deployer-cp4i-pipelines
+  namespace: ibm-technology-zone
+spec:
+  owner: ibm/ibm-technology-zone
+  targets:
+    - ./2022.4/catalog-info.yaml
