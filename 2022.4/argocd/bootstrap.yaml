@@ -10,7 +10,7 @@ spec:
     namespace: default
   source:
     path: 2022.4/argocd
-    repoURL: 'https://github.ibm.com/cloud-native-toolkit/deployer-cp4i.git'
+    repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
     targetRevision: main
   syncPolicy:
     automated:
