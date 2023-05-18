@@ -6,6 +6,7 @@ metadata:
     github.com/project-slug: cloud-native-toolkit/deployer-cp4i
   description: A collection of Tekton pipelines to deploy IBM Cloud Pak for Integration capabilities
   title: Deployer CP4I pipelines
+  namespace: ibm-technology-zone
 spec:
   type: asset
   lifecycle: experimental
