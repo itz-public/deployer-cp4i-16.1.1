@@ -1,12 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: deploy
+  name: deployer-cp4i
   namespace: openshift-gitops
-  annotations:
-    argocd.argoproj.io/sync-wave: '20'
-  labels:
-    app.kubernetes.io/instance: bootstrap
 spec:
   project: default
   destination:
