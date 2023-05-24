@@ -12,13 +12,9 @@ spec:
     - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
       targetRevision: main
       path: 2022.4/pipelines
-    #
-    # NOTE: MQ pipelines don't exist yet, this is food for thought on how
-    #       we can template capabilities deployment
-    #
-    # - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
-    #   targetRevision: main
-    #   path: 2022.4/pipelines/mq
+    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
+      targetRevision: main
+      path: 2022.4/pipelines/mq
   syncPolicy:
     automated:
       prune: true

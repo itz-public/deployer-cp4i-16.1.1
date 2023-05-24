@@ -4,6 +4,11 @@ metadata:
   name: cp4i-mq
   namespace: default
 spec:
+  params:
+    - name: NAMESPACE
+      type: string
+      description: MQ instance namespace
+      default: integration
   tasks:
     - name: wait-for-platform-ui
       params:
@@ -70,3 +75,63 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.1
+    - name: mq-quickstart
+      params:
+        - name: SCRIPT
+          value: |-
+            oc apply -f - <<EOF
+            apiVersion: mq.ibm.com/v1beta1
+            kind: QueueManager
+            metadata:
+              annotations:
+                com.ibm.mq/write-defaults-spec: 'false'
+              name: quickstart-cp4i
+              namespace: $(params.NAMESPACE)
+            spec:
+              license:
+                accept: true
+                license: L-RJON-CJR2RX
+                use: NonProduction
+              queueManager:
+                name: QUICKSTART
+                resources:
+                  limits:
+                    cpu: 500m
+                  requests:
+                    cpu: 500m
+                storage:
+                  queueManager:
+                    type: persistent-claim
+                  defaultClass: ocs-storagecluster-ceph-rbd
+                availability:
+                  type: NativeHA
+              template:
+                pod:
+                  containers:
+                    - env:
+                        - name: MQSNOAUT
+                          value: 'yes'
+                      name: qmgr
+              version: 9.3.2.1-r1
+              web:
+                enabled: true
+            EOF
+
+            while true
+            do
+              phase=$(oc get -n $(params.NAMESPACE) queuemanagers.mq.ibm.com quickstart-cp4i -o yaml | yq '.status.phase')
+              if [[ $phase != "Running" ]]; then
+                echo "Waiting for service to be Running. Current phase: $phase... (wait 10s inbetween checks)"
+              else
+                echo "MQ instance is Running. Current phase: $phase."
+                break
+              fi
+              sleep 10
+            done
+        - name: VERSION
+          value: latest
+      runAfter:
+        - mq-subscription
+      taskRef:
+        kind: Task
+        name: ibm-pak
