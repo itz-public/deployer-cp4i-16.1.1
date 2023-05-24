@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cp4i-mq
+  namespace: default
+spec:
+  tasks:
+    - name: wait-for-platform-ui
+      params:
+        - name: SCRIPT
+          value: >-
+            export PLATFORM_UI_URL=$(oc get consolelink -l
+            app.kubernetes.io/name=ibm-integration-platform-navigator -o json |
+            jq '.items[] | select (.spec.href)' | jq '.spec.href')
+
+
+            while true
+
+            do
+              if [ -z "$PLATFORM_UI_URL" ]
+              then
+                echo "\$PLATFORM_UI_URL is empty, component is being deployed."
+                sleep 1m
+              else
+                export status_code=$(curl --write-out 200 --silent --output /dev/null $PLATFORM_UI_URL)
+                if [[ "$status_code" -ne 200 ]] ; then
+                  echo "Platform UI is not available"
+                else
+                  echo "Platform UI is available"
+                  exit 0
+                fi
+              fi
+            done
+      taskRef:
+        kind: Task
+        name: ibm-pak
+    - name: mq-catalogsource
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-mq
+        - name: CASE_VERSION
+          value: 2.3.2
+        - name: ARCHITECTURE
+          value: ''
+      runAfter:
+        - wait-for-platform-ui
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+    - name: mq-subscription
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: ibm-mq
+              namespace: openshift-operators
+            spec:
+              channel: v2.3
+              name: ibm-mq
+              source: ibmmq-operator-catalogsource
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - mq-catalogsource
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
