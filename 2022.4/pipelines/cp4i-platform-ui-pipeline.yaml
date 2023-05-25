@@ -45,16 +45,30 @@ spec:
       taskRef:
         kind: Task
         name: ibmcloud-secrets-manager-get
-    - name: platform-ui-subscription
+    - name: catalogsource
       params:
         - name: SCRIPT
-          value: >-
-            oc apply -f - <<EOF
-
+          value: ''
+        - name: CASE_NAME
+          value: ibm-integration-platform-navigator
+        - name: CASE_VERSION
+          value: 7.0.4
+        - name: ARCHITECTURE
+          value: ''
+      runAfter:
+        - get-entitlement-key
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      workspaces:
+        - name: manifest-dir
+          workspace: ibm-pak-manifests
+    - name: subscription
+      params:
+        - name: SUBSCRIPTION
+          value: |
             apiVersion: operators.coreos.com/v1alpha1
-
             kind: Subscription
-
             metadata:
               name: ibm-integration-platform-navigator
               namespace: openshift-operators
@@ -64,74 +78,17 @@ spec:
               source: ibm-integration-platform-navigator-catalog
               sourceNamespace: openshift-marketplace
             EOF
-
-
-            while ! oc wait crd integrationassemblies.integration.ibm.com
-            --timeout=-1s --for=condition=Established  2>/dev/null; do sleep 30;
-            done
-
-            while ! oc wait crd platformnavigators.integration.ibm.com
-            --timeout=-1s --for=condition=Established  2>/dev/null; do sleep 30;
-            done
-        - name: VERSION
-          value: latest
-      runAfter:
-        - platform-ui-catalog-source
-      taskRef:
-        kind: ClusterTask
-        name: openshift-client
-      workspaces:
-        - name: manifest-dir
-          workspace: ibm-pak-manifests
-    - name: platform-ui-catalog-source
-      params:
         - name: SCRIPT
-          value: >-
-            export CASE_NAME=ibm-integration-platform-navigator
-
-            export CASE_VERSION=7.0.4
-
-            export ARCH=amd64
-
-
-            oc ibm-pak get ${CASE_NAME} --version ${CASE_VERSION}
-
-            oc ibm-pak generate mirror-manifests ${CASE_NAME} icr.io --version
-            ${CASE_VERSION}
-
-
-            cat
-            ~/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/catalog-sources.yaml
-
-
-            oc apply -f
-            ~/.ibm-pak/data/mirror/${CASE_NAME}/${CASE_VERSION}/catalog-sources.yaml
-
-
-            export STATUS=$(oc get CatalogSource
-            ibm-integration-platform-navigator-catalog -n openshift-marketplace
-            -o json | jq '.status.connectionState.lastObservedState')
-
-            echo "Waiting for catalog source to be ready"
-
-            until [[ $STATUS == "\"READY\"" ]]
-
-            do
-                    echo $STATUS
-                    export STATUS=$(oc get CatalogSource ibm-integration-platform-navigator-catalog -n openshift-marketplace -o json | jq '.status.connectionState.lastObservedState')
-                    sleep 2
-            done
-
-            echo "Platform navigator catalog source is ready."
+          value: ''
       runAfter:
-        - get-entitlement-key
+        - catalogsource
       taskRef:
         kind: Task
-        name: ibm-pak
+        name: apply-olm-subscription-v0.1
       workspaces:
         - name: manifest-dir
           workspace: ibm-pak-manifests
-    - name: platform-ui-deploy
+    - name: instance
       params:
         - name: SCRIPT
           value: >-
@@ -186,7 +143,7 @@ spec:
         - name: VERSION
           value: latest
       runAfter:
-        - platform-ui-subscription
+        - subscription
       taskRef:
         kind: ClusterTask
         name: openshift-client
@@ -392,7 +349,7 @@ spec:
         - name: VERSION
           value: latest
       runAfter:
-        - platform-ui-deploy
+        - instance
       taskRef:
         kind: ClusterTask
         name: openshift-client
