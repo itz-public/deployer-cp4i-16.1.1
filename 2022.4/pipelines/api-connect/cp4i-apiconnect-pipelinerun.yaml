@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: cp4i-apiconnect-
+  namespace: default
+  annotations:
+    argocd.argoproj.io/hook: Sync
+spec:
+  pipelineRef:
+    name: cp4i-apiconnect
+  serviceAccountName: pipeline
+  timeout: 6h0m0s

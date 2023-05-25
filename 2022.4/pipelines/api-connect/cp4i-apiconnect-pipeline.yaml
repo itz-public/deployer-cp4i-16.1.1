@@ -1,0 +1,124 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cp4i-apiconnect
+  namespace: default
+spec:
+  params:
+    - name: NAMESPACE
+      type: string
+      description: Instance namespace
+      default: integration
+  tasks:
+    - name: wait-for-platform-ui
+      params:
+        - name: SCRIPT
+          value: >-
+            export PLATFORM_UI_URL=$(oc get consolelink -l
+            app.kubernetes.io/name=ibm-integration-platform-navigator -o json |
+            jq '.items[] | select (.spec.href)' | jq '.spec.href')
+
+
+            while true
+
+            do
+              if [ -z "$PLATFORM_UI_URL" ]
+              then
+                echo "\$PLATFORM_UI_URL is empty, component is being deployed."
+                sleep 1m
+              else
+                export status_code=$(curl --write-out 200 --silent --output /dev/null $PLATFORM_UI_URL)
+                if [[ "$status_code" -ne 200 ]] ; then
+                  echo "Platform UI is not available"
+                else
+                  echo "Platform UI is available"
+                  exit 0
+                fi
+              fi
+            done
+      taskRef:
+        kind: Task
+        name: ibm-pak
+    - name: catalogsource
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-apiconnect
+        - name: CASE_VERSION
+          value: 4.0.4
+        - name: ARCHITECTURE
+          value: ''
+      runAfter:
+        - wait-for-platform-ui
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+    - name: subscription
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: ibm-apiconnect
+              namespace: openshift-operators
+            spec:
+              channel: v3.3
+              name: ibm-apiconnect
+              source: ibm-apiconnect-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - catalogsource
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    - name: instance
+      params:
+        - name: SCRIPT
+          value: |-
+            oc apply -f - <<EOF
+            apiVersion: apiconnect.ibm.com/v1beta1
+            kind: APIConnectCluster
+            metadata:
+              labels:
+                app.kubernetes.io/instance: apiconnect
+                app.kubernetes.io/managed-by: ibm-apiconnect
+                app.kubernetes.io/name: apiconnect-small
+              name: small
+              namespace: integration
+            spec:
+              analytics:
+                mtlsValidateClient: true
+              license:
+                accept: true
+                license: L-VQYA-YNM22H
+                metric: VIRTUAL_PROCESSOR_CORE
+                use: nonproduction
+              portal:
+                mtlsValidateClient: true
+              profile: n1xc7.m48
+              version: 10.0.5.3-4934
+              storageClassName: ocs-storagecluster-ceph-rbd
+            EOF
+
+            while true
+            do
+              phase=$(oc get -n $(params.NAMESPACE) apiconnectclusters.apiconnect.ibm.com small -o yaml | yq '.status.phase')
+              if [[ $phase != "Running" ]]; then
+                echo "Waiting for instance to be Running. Current phase: $phase... (wait 10s inbetween checks)"
+              else
+                echo "Instance is Running. Current phase: $phase."
+                break
+              fi
+              sleep 10
+            done
+        - name: VERSION
+          value: latest
+      runAfter:
+        - subscription
+      taskRef:
+        kind: Task
+        name: ibm-pak
