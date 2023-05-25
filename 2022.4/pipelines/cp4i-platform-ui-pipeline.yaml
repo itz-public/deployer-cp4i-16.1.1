@@ -74,7 +74,6 @@ spec:
               name: ibm-integration-platform-navigator
               source: ibm-integration-platform-navigator-catalog
               sourceNamespace: openshift-marketplace
-            EOF
         - name: SCRIPT
           value: ''
       runAfter:
