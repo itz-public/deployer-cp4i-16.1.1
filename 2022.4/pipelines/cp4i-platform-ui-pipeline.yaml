@@ -60,9 +60,6 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
-      workspaces:
-        - name: manifest-dir
-          workspace: ibm-pak-manifests
     - name: subscription
       params:
         - name: SUBSCRIPTION
@@ -85,9 +82,6 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.1
-      workspaces:
-        - name: manifest-dir
-          workspace: ibm-pak-manifests
     - name: instance
       params:
         - name: SCRIPT
