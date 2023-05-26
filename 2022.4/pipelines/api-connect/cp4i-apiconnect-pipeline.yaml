@@ -107,10 +107,10 @@ spec:
             while true
             do
               phase=$(oc get -n $(params.NAMESPACE) apiconnectclusters.apiconnect.ibm.com small -o yaml | yq '.status.phase')
-              if [[ $phase != "Running" ]]; then
-                echo "Waiting for instance to be Running. Current phase: $phase... (wait 10s inbetween checks)"
+              if [[ $phase != "Ready" ]]; then
+                echo "Waiting for instance to be Ready. Current phase: $phase... (wait 10s inbetween checks)"
               else
-                echo "Instance is Running. Current phase: $phase."
+                echo "Instance is Ready. Current phase: $phase."
                 break
               fi
               sleep 10
