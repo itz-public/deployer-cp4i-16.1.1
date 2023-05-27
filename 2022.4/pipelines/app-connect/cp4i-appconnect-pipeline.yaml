@@ -1,0 +1,182 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cp4i-appconnect
+  namespace: default
+spec:
+  params:
+    - name: NAMESPACE
+      type: string
+      description: Instance namespace
+      default: integration
+  tasks:
+    - name: wait-for-platform-ui
+      params:
+        - name: SCRIPT
+          value: >-
+            export PLATFORM_UI_URL=$(oc get consolelink -l
+            app.kubernetes.io/name=ibm-integration-platform-navigator -o json |
+            jq '.items[] | select (.spec.href)' | jq '.spec.href')
+
+
+            while true
+
+            do
+              if [ -z "$PLATFORM_UI_URL" ]
+              then
+                echo "\$PLATFORM_UI_URL is empty, component is being deployed."
+                sleep 1m
+              else
+                export status_code=$(curl --write-out 200 --silent --output /dev/null $PLATFORM_UI_URL)
+                if [[ "$status_code" -ne 200 ]] ; then
+                  echo "Platform UI is not available"
+                else
+                  echo "Platform UI is available"
+                  exit 0
+                fi
+              fi
+            done
+      taskRef:
+        kind: Task
+        name: ibm-pak
+    - name: catalogsource
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-appconnect
+        - name: CASE_VERSION
+          value: 8.1.0
+        - name: ARCHITECTURE
+          value: ''
+      runAfter:
+        - wait-for-platform-ui
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+    - name: subscription
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: ibm-appconnect
+              namespace: openshift-operators
+            spec:
+              channel: v8.1
+              name: ibm-appconnect
+              source: appconnect-operator-catalogsource
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - catalogsource
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    - name: design-authoring-instance
+      params:
+        - name: SCRIPT
+          value: |-
+            oc apply -f - <<EOF
+            apiVersion: appconnect.ibm.com/v1beta1
+            kind: DesignerAuthoring
+            metadata:
+              name: des-03-quickstart
+              namespace: $(params.NAMESPACE)
+            spec:
+              couchdb:
+                replicas: 1
+                storage:
+                  size: 10Gi
+                  type: persistent-claim
+                  class: ocs-storagecluster-ceph-rbd
+              designerFlowsOperationMode: local
+              license:
+                accept: true
+                license: L-MJTK-WUU8HE
+                use: CloudPakForIntegrationNonProduction
+              replicas: 1
+              useCommonServices: true
+              version: 12.0.8.0-r1
+              designerMappingAssist:
+                enabled: true
+            EOF
+
+            while true
+            do
+              phase=$(oc get -n $(params.NAMESPACE) designerauthorings.appconnect.ibm.com des-03-quickstart -o yaml | yq '.status.phase')
+              if [[ $phase == "Ready" || $phase == "Running" ]]; then
+                echo "Instance is Ready. Current phase: $phase."
+                break
+              else
+                echo "Waiting for service to be deployed. Current phase: $phase... (wait 10s inbetween checks)"
+              fi
+              sleep 10
+            done
+        - name: VERSION
+          value: latest
+      runAfter:
+        - subscription
+      taskRef:
+        kind: Task
+        name: ibm-pak
+    - name: integration-dashboard-instance
+      params:
+        - name: SCRIPT
+          value: |-
+            oc apply -f - <<EOF
+            apiVersion: appconnect.ibm.com/v1beta1
+            kind: Dashboard
+            metadata:
+              name: db-01-quickstart
+              namespace: $(params.NAMESPACE)
+            spec:
+              license:
+                accept: true
+                license: L-MJTK-WUU8HE
+                use: CloudPakForIntegrationNonProduction
+              pod:
+                containers:
+                  content-server:
+                    resources:
+                      limits:
+                        memory: 512Mi
+                      requests:
+                        cpu: 50m
+                        memory: 50Mi
+                  control-ui:
+                    resources:
+                      limits:
+                        memory: 512Mi
+                      requests:
+                        cpu: 50m
+                        memory: 125Mi
+              replicas: 1
+              storage:
+                class: ocs-storagecluster-cephfs
+                size: 5Gi
+                type: persistent-claim
+              useCommonServices: true
+              version: 12.0.8.0-r1
+            EOF
+
+            while true
+            do
+              phase=$(oc get -n $(params.NAMESPACE) dashboards.appconnect.ibm.com db-01-quickstart -o yaml | yq '.status.phase')
+              if [[ $phase == "Ready" || $phase == "Running" ]]; then
+                echo "Instance is Ready. Current phase: $phase."
+                break
+              else
+                echo "Waiting for service to be deployed. Current phase: $phase... (wait 10s inbetween checks)"
+              fi
+              sleep 10
+            done
+        - name: VERSION
+          value: latest
+      runAfter:
+        - subscription
+      taskRef:
+        kind: Task
+        name: ibm-pak

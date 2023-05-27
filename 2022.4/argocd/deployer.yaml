@@ -18,6 +18,9 @@ spec:
     - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
       targetRevision: main
       path: 2022.4/pipelines/api-connect
+    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
+      targetRevision: main
+      path: 2022.4/pipelines/app-connect
   syncPolicy:
     automated:
       prune: false
