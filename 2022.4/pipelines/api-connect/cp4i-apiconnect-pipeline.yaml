@@ -11,6 +11,7 @@ spec:
       default: integration
   tasks:
     - name: wait-for-platform-ui
+      timeout: 6h0m0s
       params:
         - name: SCRIPT
           value: >-
