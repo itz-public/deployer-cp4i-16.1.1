@@ -64,7 +64,7 @@ spec:
   sources:
     - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
       targetRevision: main
-      path: 2022.4/pipelines
+      path: 2022.4/pipelines/platform-ui
     - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
       targetRevision: main
       path: 2022.4/pipelines/mq
