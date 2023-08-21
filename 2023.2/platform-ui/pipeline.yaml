@@ -43,11 +43,7 @@ spec:
       name: IBM_ENTITLEMENT_SECRET
       type: string
     - default: 'true'
-      description: Deploy Platform UI
-      name: DEPLOY_PLATFORM_UI
-      type: string
-    - default: 'true'
-      description: Deploy Asset repository operator (requires Platform UI)
+      description: Deploy Asset repository operator
       name: DEPLOY_ASSET_REPOSITORY_OPERATOR
       type: string
     - default: 'true'
@@ -165,3 +161,22 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak
+    - name: copy-ingress-tls
+      runAfter:
+        - platform-ui-instance
+      taskRef:
+        kind: Task
+        name: ibm-tls-certs
+      params:
+        - name: namepace
+          value: $(params.CP4I_NAMESPACE)
+    - name: patch-platform-ui-tls
+      runAfter:
+        - copy-ingress-tls
+      taskRef:
+        kind: Task
+        name: ibm-pak
+      params:
+        - name: SCRIPT
+          value: >-
+            oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)

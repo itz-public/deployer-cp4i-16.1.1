@@ -10,20 +10,3 @@ spec:
     name: cp4i-2023.2
   serviceAccountName: pipeline
   timeout: 6h0m0s
-  podTemplate:
-    securityContext:
-      fsGroup: 65532
-  workspaces:
-    - name: ibm-pak-manifests
-      volumeClaimTemplate:
-        metadata:
-          creationTimestamp: null
-        spec:
-          accessModes:
-            - ReadWriteMany
-          resources:
-            requests:
-              storage: 1Gi
-          storageClassName: ocs-storagecluster-cephfs
-          volumeMode: Filesystem
-        status: {}
