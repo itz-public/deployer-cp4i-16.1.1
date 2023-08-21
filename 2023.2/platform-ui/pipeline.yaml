@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: cp4i-platform-ui
+  name: cp4i-2023.2
   namespace: default
 spec:
   finally:
@@ -27,324 +27,96 @@ spec:
         name: ibm-pak
   params:
     - default: integration
-      description: Namespace to place Platform UI
+      description: Namespace to deploy Platform UI
       name: CP4I_NAMESPACE
       type: string
     - default: '2023.2.1'
       description: Version of CP4I Platform UI to deploy
       name: CP4I_VERSION
       type: string
+    - default: key
+      description: IBM Entitlement Key secret key
+      name: IBM_ENTITLEMENT_KEY_SECRET_KEY
+      type: string
+    - default: ibm-entitlement-key
+      description: IBM Entitlement Key secret
+      name: IBM_ENTITLEMENT_SECRET
+      type: string
+    - default: 'true'
+      description: Deploy Platform UI
+      name: DEPLOY_PLATFORM_UI
+      type: string
+    - default: 'true'
+      description: Deploy Asset repository operator (requires Platform UI)
+      name: DEPLOY_ASSET_REPOSITORY_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy API Connect operator
+      name: DEPLOY_API_CONNECT_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy App Connect operator
+      name: DEPLOY_APP_CONNECT_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy MQ operator
+      name: DEPLOY_MQ_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy Event Streams operator
+      name: DEPLOY_EVENT_STREAMS_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy Event Endpoint Management operator
+      name: DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy DataPower Gateway operator
+      name: DEPLOY_DATAPOWER_GATEWAY_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy Aspera HSTS operator
+      name: DEPLOY_ASPERA_HSTS_OPERATOR
+      type: string
+    - default: 'true'
+      description: Deploy foundational services
+      name: DEPLOY_FOUNDATIONAL_SERVICES
+      type: string
   tasks:
-    - name: get-entitlement-key
+    - name: platform-ui-operator
       params:
-        - name: KEY_ID
-          value: 968d7819-f2c5-7b67-c420-3c6bfd51521e
-        - name: SECRETS_MANAGER_ENDPOINT_URL
-          value: >-
-            https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
-      taskRef:
-        kind: Task
-        name: ibmcloud-secrets-manager-get
-    - name: catalogsource
-      params:
-        - name: SCRIPT
-          value: ''
         - name: CASE_NAME
           value: ibm-integration-platform-navigator
         - name: CASE_VERSION
           value: 7.1.1
-        - name: ARCHITECTURE
-          value: ''
-      runAfter:
-        - get-entitlement-key
       taskRef:
         kind: Task
-        name: ibm-pak-apply-catalog-source
-    - name: subscription
+        name: ibm-pak-install-operator-0.1
+    - name: api-connect-operator
       params:
-        - name: SUBSCRIPTION
-          value: |
-            apiVersion: operators.coreos.com/v1alpha1
-            kind: Subscription
-            metadata:
-              name: ibm-integration-platform-navigator
-              namespace: openshift-operators
-            spec:
-              channel: v7.0
-              name: ibm-integration-platform-navigator
-              source: ibm-integration-platform-navigator-catalog
-              sourceNamespace: openshift-marketplace
-        - name: SCRIPT
-          value: ''
-      runAfter:
-        - catalogsource
+        - name: CASE_NAME
+          value: ibm-apiconnect
+        - name: CASE_VERSION
+          value: 5.0.0
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
-    - name: instance
+        name: ibm-pak-install-operator-0.1
+    - name: app-connect-operator
       params:
-        - name: SCRIPT
-          value: >-
-            echo "Creating a new platform UI instance"
-
-            oc apply -f - <<EOF
-
-            apiVersion: integration.ibm.com/v1beta1
-
-            kind: PlatformNavigator
-
-            metadata:
-              name: integration-quickstart
-              namespace: $(params.CP4I_NAMESPACE)
-            spec:
-              license:
-                accept: true
-                license: L-YBXJ-ADJNSM
-              mqDashboard: true
-              replicas: 2
-              storage:
-                class: ocs-storagecluster-cephfs
-              version: $(params.CP4I_VERSION)
-            EOF
-
-
-            echo "Waiting for Platform UI to be deployed..."
-
-            while ! oc wait --for=condition=Ready
-            PlatformNavigator/integration-quickstart -n
-            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
-
-            echo "Platform UI is deployed"
-        - name: VERSION
-          value: latest
-      runAfter:
-        - platform-ui-namespace
+        - name: CASE_NAME
+          value: ibm-appconnect
+        - name: CASE_VERSION
+          value: 9.1.0
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
-    - name: platform-ui-namespace
+        kind: Task
+        name: ibm-pak-install-operator-0.1
+    - name: mq-operator
       params:
-        - name: SCRIPT
-          value: |-
-            echo "Creating a new namespace called $(params.CP4I_NAMESPACE)"
-            oc apply -f - <<EOF
-            apiVersion: v1
-            kind: Namespace
-            metadata:
-              name: $(params.CP4I_NAMESPACE)
-            EOF
-        - name: VERSION
-          value: latest
-      runAfter:
-        - subscription
+        - name: CASE_NAME
+          value: ibm-mq
+        - name: CASE_VERSION
+          value: 2.4.1
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
-    - name: replace-certs
-      params:
-        - name: SCRIPT
-          value: >-
-            mkdir ~/hostname_update
-
-            cd ~/hostname_update
-
-
-            echo "Creating script to update certificates for common-services"
-
-            cat <<EOF > hostname_update.sh
-
-            echo "Checking all the pre-reqs"
-
-
-            echo "Checking for an authenticated oc CLI..."
-
-            TOKENS=$(oc whoami >/dev/null 2>&1)
-
-            if [ $? -eq 1 ]
-
-            then
-              echo "You must be logged in with oc first"
-              exit 1
-            else
-              echo "Authenticated oc CLI found"
-            fi
-
-
-            echo "Checking for tls.crt..."
-
-            if [ ! -f "./tls.crt" ]
-
-            then
-              echo "No tls.crt found"
-              echo "Please put the TLS certificate in tls.crt in the current directory"
-              exit 1
-            else
-              echo "Found tls.crt"
-            fi
-
-
-            echo "Checking for tls.key..."
-
-            if [ ! -f "./tls.key" ]
-
-            then
-              echo "No tls.key found"
-              echo "Please put the TLS key in tls.key in the current directory"
-              exit 1
-            else
-              echo "Found tls.key"
-            fi
-
-
-            echo "Checking for ca.crt..."
-
-            if [ ! -f "./ca.crt" ]
-
-            then
-              echo "No ca.crt found"
-              echo "Please put the CA public certificate in ca.crt in the current directory"
-              exit 1
-            else
-              echo "Found ca.crt"
-            fi
-
-
-            echo "Updating the foundational services route"
-
-
-            echo "Taking ownership of the certificate from foundational
-            services"
-
-            oc -n ibm-common-services patch managementingress default --type
-            merge --patch '{"spec":{"ignoreRouteCert":true}}'
-
-
-            echo "Updating certificate..."
-
-            oc -n ibm-common-services delete certificates.certmanager.k8s.io
-            route-cert
-
-            oc -n ibm-common-services delete secret route-tls-secret
-
-            oc -n ibm-common-services create secret generic route-tls-secret
-            --from-file=ca.crt=ca.crt  --from-file=tls.crt=tls.crt 
-            --from-file=tls.key=tls.key
-
-
-            echo "Deleting ibmcloud-cluster-ca-cert to trigger a certificate
-            refresh..."
-
-            oc delete secret ibmcloud-cluster-ca-cert -n ibm-common-services
-
-
-            echo "Restarting the auth-idp pods..."
-
-            oc -n ibm-common-services delete pod -l app=auth-idp
-
-
-            echo "Deleting the management-ingress-ibmcloud-cluster-ca-cert
-            secret..."
-
-            oc -n $(params.CP4I_NAMESPACE)} delete secret
-            management-ingress-ibmcloud-cluster-ca-cert
-
-
-            echo "Creating operand request file to apply"
-
-
-            echo "apiVersion: operator.ibm.com/v1alpha1
-
-            kind: OperandRequest
-
-            metadata:
-              name: register-new-ca-cert
-              namespace: $(params.CP4I_NAMESPACE)}
-            spec:
-              requests:
-                - operands:
-                    - name: ibm-management-ingress-operator
-                  registry: common-service
-                  registryNamespace: ibm-common-services" > operand_request.yaml
-
-            echo "Creating a new operand request that will trigger the
-            recreation of the management-ingress secret..."
-
-            oc apply -f operand_request.yaml
-
-
-            echo "Wait for the operand request to be ready..."
-
-            oc wait --for condition=ready --timeout=120s operandrequest -n
-            $(params.CP4I_NAMESPACE)} register-new-ca-cert
-
-
-            echo "Waiting for up to 30 minutes for the auth-idp pods to
-            restart..."
-
-            oc wait --for condition=ready --timeout=900s pod -l app=auth-idp -n
-            ibm-common-services
-
-
-            echo "Deleting the operand request now secret is up..."
-
-            oc delete operandrequest -n $(params.CP4I_NAMESPACE)}
-            register-new-ca-cert
-
-
-            echo "Setup complete"
-
-            EOF
-
-
-            chmod +x hostname_update.sh
-
-
-            echo "Extracting cluster's TLS certs"
-
-            pwd
-
-
-            oc extract secret/$(oc get ingresscontroller.operator default -n
-            openshift-ingress-operator -o
-            jsonpath='{.spec.defaultCertificate.name}') -n openshift-ingress 
-            --to=. --keys=tls.crt,tls.key --confirm
-
-
-            csplit -s -z -f cert- tls.crt '/-----BEGIN CERTIFICATE-----/'  '{*}'
-
-
-            ls -ltr
-
-
-            mv tls.crt tls.crt.original
-
-            mv cert-00 tls.crt
-
-            cat cert-01 cert-02 > ca.crt
-
-
-            echo "Updating common services' certs"
-
-            ./hostname_update.sh
-
-
-            oc -n $(params.CP4I_NAMESPACE) delete secret custom-tls-secret 
-            --ignore-not-found=true
-
-            oc create secret generic custom-tls-secret 
-            --from-file=ca.crt=./ca.crt --from-file=tls.crt=./tls.crt
-            --from-file=tls.key=./tls.key -n $(params.CP4I_NAMESPACE)
-
-
-            oc patch PlatformNavigator integration-quickstart --type merge
-            --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n
-            $(params.CP4I_NAMESPACE)
-        - name: VERSION
-          value: latest
-      runAfter:
-        - instance
-      taskRef:
-        kind: ClusterTask
-        name: openshift-client
-  workspaces:
-    - name: ibm-pak-manifests
+        kind: Task
+        name: ibm-pak-install-operator-0.1
+    
