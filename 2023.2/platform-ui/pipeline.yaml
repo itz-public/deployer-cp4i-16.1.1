@@ -83,40 +83,85 @@ spec:
       name: DEPLOY_FOUNDATIONAL_SERVICES
       type: string
   tasks:
-    - name: platform-ui-operator
+    - name: platform-ui-catalog-source
       params:
+        - name: SCRIPT
+          value: ''
         - name: CASE_NAME
           value: ibm-integration-platform-navigator
         - name: CASE_VERSION
           value: 7.1.1
+        - name: ARCHITECTURE
+          value: ''
       taskRef:
         kind: Task
-        name: ibm-pak-install-operator-0.1
-    - name: api-connect-operator
+        name: ibm-pak-apply-catalog-source
+    - name: platform-ui-operator
       params:
-        - name: CASE_NAME
-          value: ibm-apiconnect
-        - name: CASE_VERSION
-          value: 5.0.0
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: ibm-integration-platform-navigator
+              namespace: openshift-operators
+            spec:
+              channel: v7.1
+              name: ibm-integration-platform-navigator
+              source: ibm-integration-platform-navigator-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - platform-ui-catalog-source
       taskRef:
         kind: Task
-        name: ibm-pak-install-operator-0.1
-    - name: app-connect-operator
+        name: apply-olm-subscription-v0.1
+    - name: platform-ui-instance
       params:
-        - name: CASE_NAME
-          value: ibm-appconnect
-        - name: CASE_VERSION
-          value: 9.1.0
+        - name: SCRIPT
+          value: >-
+            echo "Creating a new namespace called $(params.CP4I_NAMESPACE)"
+            oc apply -f - <<EOF
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: $(params.CP4I_NAMESPACE)
+            EOF
+
+            echo "Creating a new platform UI instance"
+
+            oc apply -f - <<EOF
+
+            apiVersion: integration.ibm.com/v1beta1
+
+            kind: PlatformNavigator
+
+            metadata:
+              name: integration-quickstart
+              namespace: $(params.CP4I_NAMESPACE)
+            spec:
+              license:
+                accept: true
+                license: L-YBXJ-ADJNSM
+              replicas: 2
+              storage:
+                class: ocs-storagecluster-cephfs
+              version: $(params.CP4I_VERSION)
+            EOF
+
+
+            echo "Waiting for Platform UI to be deployed..."
+
+            while ! oc wait --for=condition=Ready
+            PlatformNavigator/integration-quickstart -n
+            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
+            echo "Platform UI is deployed"
+        - name: VERSION
+          value: latest
+      runAfter:
+        - platform-ui-operator
       taskRef:
         kind: Task
-        name: ibm-pak-install-operator-0.1
-    - name: mq-operator
-      params:
-        - name: CASE_NAME
-          value: ibm-mq
-        - name: CASE_VERSION
-          value: 2.4.1
-      taskRef:
-        kind: Task
-        name: ibm-pak-install-operator-0.1
-    
+        name: ibm-pak
