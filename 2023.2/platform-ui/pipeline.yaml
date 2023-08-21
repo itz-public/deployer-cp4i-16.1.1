@@ -74,10 +74,6 @@ spec:
       description: Deploy Aspera HSTS operator
       name: DEPLOY_ASPERA_HSTS_OPERATOR
       type: string
-    - default: 'true'
-      description: Deploy foundational services
-      name: DEPLOY_FOUNDATIONAL_SERVICES
-      type: string
   tasks:
     - name: platform-ui-catalog-source
       params:
@@ -128,22 +124,19 @@ spec:
             echo "Creating a new platform UI instance"
 
             oc apply -f - <<EOF
-
             apiVersion: integration.ibm.com/v1beta1
-
             kind: PlatformNavigator
-
             metadata:
               name: integration-quickstart
-              namespace: $(params.CP4I_NAMESPACE)
+              namespace: integration
             spec:
               license:
                 accept: true
                 license: L-YBXJ-ADJNSM
-              replicas: 2
+              replicas: 1
+              version: 2023.2.1
               storage:
                 class: ocs-storagecluster-cephfs
-              version: $(params.CP4I_VERSION)
             EOF
 
 
@@ -180,3 +173,92 @@ spec:
         - name: SCRIPT
           value: >-
             oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)
+    # Asset repository
+    - name: asset-repository-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-integration-asset-repository
+        - name: CASE_VERSION
+          value: 1.5.11
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: asset-repository-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+              name: ibm-integration-asset-repository
+              namespace: openshift-operators
+            spec:
+              channel: v1.5
+              installPlanApproval: Automatic
+              name: ibm-integration-asset-repository
+              source: ibm-integration-asset-repository-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - asset-repository-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # API Connect
+    - name: apic-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-apiconnect
+        - name: CASE_VERSION
+          value: 5.0.0
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_API_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: apic-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/ibm-apiconnect.openshift-operators: ""
+              name: ibm-apiconnect
+              namespace: openshift-operators
+            spec:
+              channel: v5.0
+              installPlanApproval: Automatic
+              name: ibm-apiconnect
+              source: ibm-apiconnect-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - apic-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    
+      
