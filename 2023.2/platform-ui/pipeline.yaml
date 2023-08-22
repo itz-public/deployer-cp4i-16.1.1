@@ -260,5 +260,180 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.1
+    # App Connect
+    - name: appconnect-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-appconnect
+        - name: CASE_VERSION
+          value: 9.1.0
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_APP_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: appconnect-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/ibm-appconnect.openshift-operators: ""
+              name: ibm-appconnect
+              namespace: openshift-operators
+            spec:
+              channel: v9.1
+              installPlanApproval: Automatic
+              name: ibm-appconnect
+              source: appconnect-operator-catalogsource
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - appconnect-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # MQ
+    - name: mq-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-mq
+        - name: CASE_VERSION
+          value: 2.4.1
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_MQ_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: mq-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/ibm-mq.openshift-operators: ""
+              name: ibm-mq
+              namespace: openshift-operators
+            spec:
+              channel: v2.4
+              installPlanApproval: Automatic
+              name: ibm-mq
+              source: ibmmq-operator-catalogsource
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - mq-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # Event Streams
+    - name: es-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-eventstreams
+        - name: CASE_VERSION
+          value: 3.2.2
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_EVENT_STREAM_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: es-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/ibm-eventstreams.openshift-operators: ""
+              name: ibm-eventstreams
+              namespace: openshift-operators
+            spec:
+              channel: v3.2
+              installPlanApproval: Automatic
+              name: ibm-eventstreams
+              source: ibm-eventstreams
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - es-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # Event Endpoint Management
+    - name: eem-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-eventendpointmanagement
+        - name: CASE_VERSION
+          value: 11.0.2
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: eem-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/ibm-eventendpointmanagement.openshift-operators: ""
+              name: ibm-eventendpointmanagement
+              namespace: openshift-operators
+            spec:
+              channel: v11.0
+              installPlanApproval: Automatic
+              name: ibm-eventendpointmanagement
+              source: ibm-eventendpointmanagement-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - eem-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
     
-      
