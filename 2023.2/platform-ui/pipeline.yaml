@@ -90,6 +90,7 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak
+    
     - name: get-entitlement-key
       params:
         - name: KEY_ID
@@ -99,6 +100,8 @@ spec:
       taskRef:
         kind: Task
         name: ibmcloud-secrets-manager-get
+      runAfter:
+        - create-namespace
     - name: add-global-pull-secret
       params:
         - name: SCRIPT
@@ -162,7 +165,7 @@ spec:
               mcp_worker_node=$(oc get mcp --no-headers|grep worker |awk '{print $4}')
             done
       runAfter:
-        - create-namespace
+        - get-entitlement-key
       taskRef:
         kind: Task
         name: ibm-pak
@@ -448,7 +451,7 @@ spec:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
-        - input: $(params.DEPLOY_EVENT_STREAM_OPERATOR)
+        - input: $(params.DEPLOY_EVENT_STREAMS_OPERATOR)
           operator: in
           values: ["true"]
       runAfter:
