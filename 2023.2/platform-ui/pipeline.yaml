@@ -34,14 +34,6 @@ spec:
       description: Version of CP4I Platform UI to deploy
       name: CP4I_VERSION
       type: string
-    - default: key
-      description: IBM Entitlement Key secret key
-      name: IBM_ENTITLEMENT_KEY_SECRET_KEY
-      type: string
-    - default: ibm-entitlement-key
-      description: IBM Entitlement Key secret
-      name: IBM_ENTITLEMENT_SECRET
-      type: string
     - default: 'true'
       description: Deploy Asset repository operator
       name: DEPLOY_ASSET_REPOSITORY_OPERATOR
@@ -74,7 +66,106 @@ spec:
       description: Deploy Aspera HSTS operator
       name: DEPLOY_ASPERA_HSTS_OPERATOR
       type: string
+    - default: a65ac528-bbca-1425-8d07-fde9e2f1ff70
+      name: IBM_ENTITLEMENT_KEY_ID
+      type: string
+    - default: >-
+        https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
+      name: IBM_SECRETS_MANAGER_ENDPOINT
+      type: string
   tasks:
+    - name: create-namespace
+      params:
+        - name: SCRIPT
+          value: |-
+            echo "Creating a new namespace called $(params.CP4I_NAMESPACE)"
+            oc apply -f - <<EOF
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: $(params.CP4I_NAMESPACE)
+            EOF
+        - name: VERSION
+          value: latest
+      taskRef:
+        kind: Task
+        name: ibm-pak
+    - name: get-entitlement-key
+      params:
+        - name: KEY_ID
+          value: $(params.IBM_ENTITLEMENT_KEY_ID)
+        - name: SECRETS_MANAGER_ENDPOINT_URL
+          value: $(params.IBM_SECRETS_MANAGER_ENDPOINT)
+      taskRef:
+        kind: Task
+        name: ibmcloud-secrets-manager-get
+    - name: add-global-pull-secret
+      params:
+        - name: SCRIPT
+          value: >-
+            oc patch --type=merge --patch='{"spec":{"paused":true}}'
+            machineconfigpool/master
+
+            oc patch --type=merge --patch='{"spec":{"paused":true}}'
+            machineconfigpool/worker
+
+            oc extract secret/pull-secret -n openshift-config --keys=.dockerconfigjson --to=. --confirm
+            cat .dockerconfigjson | jq > .dockerconfigjson.orig
+            export CP_AUTH_STRING=$(echo "cp:$(tasks.get-entitlement-key.results.secret-value)" | base64)
+            jq ".auths += {\"cp.icr.io\": {\"auth\": \"$CP_AUTH_STRING\"}}" .dockerconfigjson.orig > .dockerconfigjson
+            oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson
+
+
+            oc patch --type=merge --patch='{"spec":{"paused":false}}'
+            machineconfigpool/master
+
+            oc patch --type=merge --patch='{"spec":{"paused":false}}'
+            machineconfigpool/worker
+
+
+            oc get mcp
+
+            echo "Wait for check mcp..."
+
+            sleep 30
+
+            #check mcp update status
+
+            echo "Wait for check master node ..."
+
+            oc get mcp --no-headers|grep master
+
+            mcp_master_node=$(oc get mcp --no-headers|grep master|awk '{print
+            $4}')
+
+            while [ "${mcp_master_node}" = "True" ]
+
+            do
+              oc get mcp --no-headers|grep master
+              sleep 10
+              mcp_master_node=$(oc get mcp --no-headers|grep master |awk '{print $4}')
+            done
+
+
+            echo "Wait for check worker node ..."
+
+            oc get mcp --no-headers|grep worker
+
+            mcp_worker_node=$(oc get mcp --no-headers|grep worker |awk '{print
+            $4}')
+
+            while [ "${mcp_worker_node}" = "True" ]
+
+            do
+              oc get mcp --no-headers|grep worker
+              sleep 10
+              mcp_worker_node=$(oc get mcp --no-headers|grep worker |awk '{print $4}')
+            done
+      runAfter:
+        - create-namespace
+      taskRef:
+        kind: Task
+        name: ibm-pak
     - name: platform-ui-catalog-source
       params:
         - name: SCRIPT
@@ -85,6 +176,8 @@ spec:
           value: 7.1.1
         - name: ARCHITECTURE
           value: ''
+      runAfter:
+        - add-global-pull-secret
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
@@ -113,14 +206,6 @@ spec:
       params:
         - name: SCRIPT
           value: >-
-            echo "Creating a new namespace called $(params.CP4I_NAMESPACE)"
-            oc apply -f - <<EOF
-            apiVersion: v1
-            kind: Namespace
-            metadata:
-              name: $(params.CP4I_NAMESPACE)
-            EOF
-
             echo "Creating a new platform UI instance"
 
             oc apply -f - <<EOF
@@ -433,6 +518,94 @@ spec:
           value: ''
       runAfter:
         - eem-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # Datapower
+    - name: dp-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-datapower-operator
+        - name: CASE_VERSION
+          value: 1.7.0
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_DATAPOWER_GATEWAY_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: dp-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/datapower-operator.openshift-operators: ""
+              name: ibm-datapower
+              namespace: openshift-operators
+            spec:
+              channel: v1.7
+              installPlanApproval: Automatic
+              name: datapower-operator
+              source: ibm-datapower-operator-catalog
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - dp-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.1
+    # Aspera
+    - name: aspera-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-datapower-operator
+        - name: CASE_VERSION
+          value: 1.7.0
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_ASPERA_HSTS_OPERATOR)
+          operator: in
+          values: ["true"]
+      runAfter:
+        - platform-ui-operator
+    - name: aspera-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              labels:
+                operators.coreos.com/aspera-hsts-operator.openshift-operators: ""
+              name: aspera-hsts-operator
+              namespace: openshift-operators
+            spec:
+              channel: v1.5
+              installPlanApproval: Automatic
+              name: aspera-hsts-operator
+              source: aspera-operators
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - aspera-catalog-source
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.1

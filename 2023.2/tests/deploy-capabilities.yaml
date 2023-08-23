@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cp4i-2023.2-aspera
+  namespace: default
+spec:
+  params:
+    - default: 'true'
+      description: Deploy capability operator
+      name: DEPLOY
+      type: string
+  tasks:
+    # Asset repository
+    - name: catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-aspera-hsts-operator
+        - name: CASE_VERSION
+          value: 1.5.10
+        - name: ARCHITECTURE
+          value: ''
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY)
+          operator: in
+          values: ["true"]
