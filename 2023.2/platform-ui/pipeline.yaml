@@ -106,6 +106,8 @@ spec:
       params:
         - name: SCRIPT
           value: >-
+            mkdir pull-secret && pull-secret
+
             oc patch --type=merge --patch='{"spec":{"paused":true}}'
             machineconfigpool/master
 
@@ -553,7 +555,7 @@ spec:
             metadata:
               labels:
                 operators.coreos.com/datapower-operator.openshift-operators: ""
-              name: ibm-datapower
+              name: datapower-operator-v1.7-ibm-datapower-operator-catalog-openshift-marketplace
               namespace: openshift-operators
             spec:
               channel: v1.7
