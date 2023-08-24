@@ -210,7 +210,7 @@ spec:
         - platform-ui-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
       params:
         - name: SCRIPT
@@ -311,7 +311,7 @@ spec:
         - asset-repository-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # API Connect
     - name: apic-catalog-source
       retries: 3
@@ -357,7 +357,7 @@ spec:
         - apic-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # App Connect
     - name: appconnect-catalog-source
       retries: 3
@@ -403,7 +403,7 @@ spec:
         - appconnect-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # MQ
     - name: mq-catalog-source
       retries: 3
@@ -449,7 +449,7 @@ spec:
         - mq-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # Event Streams
     - name: es-catalog-source
       retries: 3
@@ -495,7 +495,7 @@ spec:
         - es-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # Event Endpoint Management
     - name: eem-catalog-source
       retries: 3
@@ -541,7 +541,7 @@ spec:
         - eem-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # Datapower
     - name: dp-catalog-source
       retries: 3
@@ -587,7 +587,7 @@ spec:
         - dp-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     # Aspera
     - name: aspera-catalog-source
       retries: 3
@@ -633,5 +633,5 @@ spec:
         - aspera-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     
