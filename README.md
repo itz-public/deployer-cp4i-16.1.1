@@ -15,69 +15,15 @@ A `deployer` cluster is configured with the following items:
 
 ## Repository organisation
 
-Each top-level folder in this repository represents a Cloud Pak for Integration version. In each top-level folder contains 2 main folders `argocd` and `pipelines`. The `argocd` folder contains ArgoCD applications that can be deployed into an OpenShift cluster configured with OpenShift GitOps (ArgoCD). The `pipelines` folder contains Tekton pipelines and pipelineruns for each integration capabilities.
-
-```
-.
-└── cp4i-version/
-    ├── argocd/
-    │   └── deployer.yaml
-    └── pipelines/
-        └── capability/
-            ├── pipeline.yaml
-            └── pipelinerun.yaml
-```
-
-Additionally, where relevant, a Backstage `catalog-info.yaml` is provided to add metadata.
-
-## Pipelines organisation
-
-Each Cloud Pak for Integration is deployed with its own pipeline. If a capability is dependent on another capability being deployed, e.g.: MQ requires the base Cloud Pak for Integration operator (Platform UI) to be deployed, then the dependent capability will include a wait step to ensure the base operator is deployed before the dependent operator is deployed.
-
-```mermaid
-flowchart TD
-    platform_ui[Platform UI]
-    start --> platform_ui
-    platform_ui --> mq[MQ]
-    platform_ui --> apic[API Connect]
-    platform_ui --> ace[App Connect]
-    platform_ui --> eventstream[Event Stream]
-```
-
-These pipelines are written to be run in parallel with one another.
+There are two versions 2022.4 and 2023.2. At any one time, only the latest version of Cloud Pak for Integration is worked on and supported on a best-effort basis.
 
 ## Deploy
 
-As each capability's pipeline and pipelinerun is organised into folder, uncomment/comment the `<version>/argocd/deployer.yaml`'s Application sources to select which capabilities to deploy into a cluster. The example below deploys Platform UI, MQ, API Connect and App Connect for Cloud Pak for Integration v2022.4 into a cluster.
+The pipeline to deploy Cloud Pak for Integration 2023.2 deploys the platform UI and all Cloud Pak for Integration operators and catalog sources. The responsibility to deploy the actual instances depends on you as the cluster operator, as individual products have their own installation processes.
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: deployer-cp4i
-  namespace: openshift-gitops
-spec:
-  project: default
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  sources:
-    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
-      targetRevision: main
-      path: 2022.4/pipelines/platform-ui
-    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
-      targetRevision: main
-      path: 2022.4/pipelines/mq
-    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
-      targetRevision: main
-      path: 2022.4/pipelines/api-connect
-    - repoURL: 'https://github.com/cloud-native-toolkit/deployer-cp4i.git'
-      targetRevision: main
-      path: 2022.4/pipelines/app-connect
-  syncPolicy:
-    automated:
-      prune: false
-      selfHeal: true
-    syncOptions:
-    - CreateNamespace=true
+To deploy the pipeline, run 
+
+```
+oc apply -f 2023.2/pipeline.yaml
+oc apply -f 2023.2/pipelinerun.yaml
 ```
