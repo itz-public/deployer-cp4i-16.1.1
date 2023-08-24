@@ -106,7 +106,7 @@ spec:
       params:
         - name: SCRIPT
           value: >-
-            mkdir pull-secret && pull-secret
+            mkdir ~/global-pull-secret && cd ~/global-pull-secret
 
             oc patch --type=merge --patch='{"spec":{"paused":true}}'
             machineconfigpool/master
@@ -115,9 +115,13 @@ spec:
             machineconfigpool/worker
 
             oc extract secret/pull-secret -n openshift-config --keys=.dockerconfigjson --to=. --confirm
-            cat .dockerconfigjson | jq > .dockerconfigjson.orig
+            
+            cp .dockerconfigjson .dockerconfigjson.orig
+
             export CP_AUTH_STRING=$(echo "cp:$(tasks.get-entitlement-key.results.secret-value)" | base64)
+
             jq ".auths += {\"cp.icr.io\": {\"auth\": \"$CP_AUTH_STRING\"}}" .dockerconfigjson.orig > .dockerconfigjson
+
             oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson
 
 
