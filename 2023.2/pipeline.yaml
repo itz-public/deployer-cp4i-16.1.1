@@ -269,6 +269,7 @@ spec:
             oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)
     # Asset repository
     - name: asset-repository-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -288,6 +289,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: asset-repository-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -312,6 +314,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # API Connect
     - name: apic-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -331,6 +334,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: apic-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -356,6 +360,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # App Connect
     - name: appconnect-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -375,6 +380,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: appconnect-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -400,6 +406,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # MQ
     - name: mq-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -419,6 +426,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: mq-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -444,6 +452,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # Event Streams
     - name: es-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -463,6 +472,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: es-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -488,6 +498,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # Event Endpoint Management
     - name: eem-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -507,6 +518,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: eem-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -532,6 +544,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # Datapower
     - name: dp-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -551,6 +564,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: dp-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -576,6 +590,7 @@ spec:
         name: apply-olm-subscription-v0.1
     # Aspera
     - name: aspera-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -595,6 +610,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: aspera-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
