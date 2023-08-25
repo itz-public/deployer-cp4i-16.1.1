@@ -210,7 +210,7 @@ spec:
         - platform-ui-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
       params:
         - name: SCRIPT
@@ -269,6 +269,7 @@ spec:
             oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)
     # Asset repository
     - name: asset-repository-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -288,6 +289,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: asset-repository-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -309,9 +311,14 @@ spec:
         - asset-repository-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
+          operator: in
+          values: ["true"]
     # API Connect
     - name: apic-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -331,6 +338,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: apic-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -353,9 +361,14 @@ spec:
         - apic-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_API_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
     # App Connect
     - name: appconnect-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -375,6 +388,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: appconnect-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -397,9 +411,14 @@ spec:
         - appconnect-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_APP_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
     # MQ
     - name: mq-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -419,6 +438,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: mq-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -441,9 +461,14 @@ spec:
         - mq-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_MQ_OPERATOR)
+          operator: in
+          values: ["true"]
     # Event Streams
     - name: es-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -463,6 +488,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: es-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -485,9 +511,14 @@ spec:
         - es-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_EVENT_STREAMS_OPERATOR)
+          operator: in
+          values: ["true"]
     # Event Endpoint Management
     - name: eem-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -507,6 +538,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: eem-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -529,9 +561,14 @@ spec:
         - eem-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR)
+          operator: in
+          values: ["true"]
     # Datapower
     - name: dp-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -551,6 +588,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: dp-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -573,9 +611,14 @@ spec:
         - dp-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_DATAPOWER_GATEWAY_OPERATOR)
+          operator: in
+          values: ["true"]
     # Aspera
     - name: aspera-catalog-source
+      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -595,6 +638,7 @@ spec:
       runAfter:
         - platform-ui-operator
     - name: aspera-operator
+      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -617,5 +661,9 @@ spec:
         - aspera-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.1
+        name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_ASPERA_HSTS_OPERATOR)
+          operator: in
+          values: ["true"]
     
