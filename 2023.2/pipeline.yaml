@@ -312,6 +312,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
+          operator: in
+          values: ["true"]
     # API Connect
     - name: apic-catalog-source
       retries: 3
@@ -358,6 +362,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_API_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
     # App Connect
     - name: appconnect-catalog-source
       retries: 3
@@ -404,6 +412,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_APP_CONNECT_OPERATOR)
+          operator: in
+          values: ["true"]
     # MQ
     - name: mq-catalog-source
       retries: 3
@@ -450,6 +462,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_MQ_OPERATOR)
+          operator: in
+          values: ["true"]
     # Event Streams
     - name: es-catalog-source
       retries: 3
@@ -496,6 +512,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_EVENT_STREAMS_OPERATOR)
+          operator: in
+          values: ["true"]
     # Event Endpoint Management
     - name: eem-catalog-source
       retries: 3
@@ -542,6 +562,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR)
+          operator: in
+          values: ["true"]
     # Datapower
     - name: dp-catalog-source
       retries: 3
@@ -588,6 +612,10 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_DATAPOWER_GATEWAY_OPERATOR)
+          operator: in
+          values: ["true"]
     # Aspera
     - name: aspera-catalog-source
       retries: 3
@@ -634,4 +662,8 @@ spec:
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
+      when:
+        - input: $(params.DEPLOY_ASPERA_HSTS_OPERATOR)
+          operator: in
+          values: ["true"]
     
