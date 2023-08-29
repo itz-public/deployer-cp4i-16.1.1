@@ -627,9 +627,9 @@ spec:
         - name: SCRIPT
           value: ''
         - name: CASE_NAME
-          value: ibm-datapower-operator
+          value: ibm-aspera-hsts-operator
         - name: CASE_VERSION
-          value: 1.7.0
+          value: 1.5.10
         - name: ARCHITECTURE
           value: ''
       taskRef:
