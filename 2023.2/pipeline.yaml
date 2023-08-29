@@ -73,6 +73,10 @@ spec:
         https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
       name: IBM_SECRETS_MANAGER_ENDPOINT
       type: string
+    - default: ocs-storagecluster-cephfs
+      name: PLATFORM_UI_STORAGE_CLASS
+      description: Platform UI storage class
+      type: string
   tasks:
     - name: create-namespace
       params:
@@ -222,15 +226,15 @@ spec:
             kind: PlatformNavigator
             metadata:
               name: integration-quickstart
-              namespace: integration
+              namespace: $(params.CP4I_NAMESPACE)
             spec:
               license:
                 accept: true
                 license: L-YBXJ-ADJNSM
               replicas: 1
-              version: 2023.2.1
+              version: $(params.CP4I_VERSION)
               storage:
-                class: ocs-storagecluster-cephfs
+                class: $(params.PLATFORM_UI_STORAGE_CLASS)
             EOF
 
 
