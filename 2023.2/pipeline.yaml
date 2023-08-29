@@ -240,9 +240,7 @@ spec:
 
             echo "Waiting for Platform UI to be deployed..."
 
-            while ! oc wait --for=condition=Ready
-            PlatformNavigator/integration-quickstart -n
-            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
 
             echo "Platform UI is deployed"
         - name: VERSION
