@@ -75,7 +75,7 @@ spec:
       type: string
     - default: ocs-storagecluster-cephfs
       name: PLATFORM_UI_STORAGE_CLASS
-      description: Platform UI storage class
+      description: Platform UI storage class (RWX)
       type: string
   tasks:
     - name: create-namespace
