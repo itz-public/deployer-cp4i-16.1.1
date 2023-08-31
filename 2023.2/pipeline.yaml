@@ -275,8 +275,13 @@ spec:
         name: ibm-pak
       params:
         - name: SCRIPT
-          value: >-
+          value: |-
             oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)
+            echo "Waiting for Platform UI to be ready..."
+
+            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
+            echo "Platform UI is ready"
     # Asset repository
     - name: asset-repository-catalog-source
       retries: 3
