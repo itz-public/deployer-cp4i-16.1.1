@@ -216,6 +216,7 @@ spec:
         kind: Task
         name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
+      retries: 10
       params:
         - name: SCRIPT
           value: |-
@@ -289,7 +290,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: asset-repository-operator
       retries: 3
       params:
@@ -338,7 +339,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: apic-operator
       retries: 3
       params:
@@ -388,7 +389,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: appconnect-operator
       retries: 3
       params:
@@ -438,7 +439,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: mq-operator
       retries: 3
       params:
@@ -488,7 +489,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: es-operator
       retries: 3
       params:
@@ -538,7 +539,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: eem-operator
       retries: 3
       params:
@@ -588,7 +589,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: dp-operator
       retries: 3
       params:
@@ -638,7 +639,7 @@ spec:
           operator: in
           values: ["true"]
       runAfter:
-        - platform-ui-operator
+        - patch-platform-ui-tls
     - name: aspera-operator
       retries: 3
       params:
