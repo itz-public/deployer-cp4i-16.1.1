@@ -216,7 +216,8 @@ spec:
         kind: Task
         name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
-      retries: 10
+      retries: 3
+      timeout: 3h0m0s
       params:
         - name: SCRIPT
           value: |-
