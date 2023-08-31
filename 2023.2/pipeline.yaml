@@ -265,7 +265,7 @@ spec:
         kind: Task
         name: ibm-tls-certs
       params:
-        - name: namepace
+        - name: namespace
           value: $(params.CP4I_NAMESPACE)
     - name: patch-platform-ui-tls
       runAfter:
