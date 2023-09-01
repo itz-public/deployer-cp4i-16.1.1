@@ -223,6 +223,13 @@ spec:
           value: |-
             echo "Creating a new platform UI instance"
 
+            oc delete secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) --ignore-not-found=true
+            oc create secret docker-registry ibm-entitlement-key \
+              --docker-username=cp \
+              --docker-password=$(tasks.get-entitlement-key.results.secret-value) \
+              --docker-server=cp.icr.io \
+              --namespace=$(params.CP4I_NAMESPACE)
+              
             oc apply -f - <<EOF
             apiVersion: integration.ibm.com/v1beta1
             kind: PlatformNavigator
