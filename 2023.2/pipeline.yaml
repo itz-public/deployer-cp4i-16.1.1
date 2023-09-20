@@ -69,6 +69,10 @@ spec:
     - default: a65ac528-bbca-1425-8d07-fde9e2f1ff70
       name: IBM_ENTITLEMENT_KEY_ID
       type: string
+    - default: 'true'
+      description: Deploy platform UI
+      name: DEPLOY_PLATFORM_UI
+      type: string
     - default: >-
         https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
       name: IBM_SECRETS_MANAGER_ENDPOINT
@@ -94,7 +98,6 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak
-    
     - name: get-entitlement-key
       params:
         - name: KEY_ID
@@ -106,74 +109,30 @@ spec:
         name: ibmcloud-secrets-manager-get
       runAfter:
         - create-namespace
-    - name: add-global-pull-secret
+    - name: create-ibm-entitlement-key
       params:
         - name: SCRIPT
-          value: >-
-            mkdir ~/global-pull-secret && cd ~/global-pull-secret
+          value: |-
+            if oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) >/dev/null 2>&1; then
+              username=$(oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq -r '.auths."cp.icr.io".username')
+              password=$(oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq -r '.auths."cp.icr.io".password')
 
-            oc patch --type=merge --patch='{"spec":{"paused":true}}'
-            machineconfigpool/master
-
-            oc patch --type=merge --patch='{"spec":{"paused":true}}'
-            machineconfigpool/worker
-
-            oc extract secret/pull-secret -n openshift-config --keys=.dockerconfigjson --to=. --confirm
-            
-            cp .dockerconfigjson .dockerconfigjson.orig
-
-            export CP_AUTH_STRING=$(echo "cp:$(tasks.get-entitlement-key.results.secret-value)" | base64)
-
-            jq ".auths += {\"cp.icr.io\": {\"auth\": \"$CP_AUTH_STRING\"}}" .dockerconfigjson.orig > .dockerconfigjson
-
-            oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson
-
-
-            oc patch --type=merge --patch='{"spec":{"paused":false}}'
-            machineconfigpool/master
-
-            oc patch --type=merge --patch='{"spec":{"paused":false}}'
-            machineconfigpool/worker
-
-
-            oc get mcp
-
-            echo "Wait for check mcp..."
-
-            sleep 30
-
-            #check mcp update status
-
-            echo "Wait for check master node ..."
-
-            oc get mcp --no-headers|grep master
-
-            mcp_master_node=$(oc get mcp --no-headers|grep master|awk '{print
-            $4}')
-
-            while [ "${mcp_master_node}" = "True" ]
-
-            do
-              oc get mcp --no-headers|grep master
-              sleep 10
-              mcp_master_node=$(oc get mcp --no-headers|grep master |awk '{print $4}')
-            done
-
-
-            echo "Wait for check worker node ..."
-
-            oc get mcp --no-headers|grep worker
-
-            mcp_worker_node=$(oc get mcp --no-headers|grep worker |awk '{print
-            $4}')
-
-            while [ "${mcp_worker_node}" = "True" ]
-
-            do
-              oc get mcp --no-headers|grep worker
-              sleep 10
-              mcp_worker_node=$(oc get mcp --no-headers|grep worker |awk '{print $4}')
-            done
+              if [ "$username" == "cp" ] && [ "$password" == "$(tasks.get-entitlement-key.results.secret-value)" ]; then
+                echo "Secret ibm-entitlement-key was already created. Skipping secret creation"
+                exit 0
+              else
+                echo "Existing ibm-entitlement-key password does not match retrieved key. Deleting..."
+                oc delete secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) --ignore-not-found=true
+              fi
+            fi
+            echo "Creating new ibm-entitlement-key secret"
+            oc create secret docker-registry ibm-entitlement-key \
+                --docker-username=cp \
+                --docker-password=$(tasks.get-entitlement-key.results.secret-value) \
+                --docker-server=cp.icr.io \
+                --namespace=$(params.CP4I_NAMESPACE)
+        - name: VERSION
+          value: latest
       runAfter:
         - get-entitlement-key
       taskRef:
@@ -190,7 +149,7 @@ spec:
         - name: ARCHITECTURE
           value: ''
       runAfter:
-        - add-global-pull-secret
+        - create-ibm-entitlement-key
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
@@ -221,15 +180,13 @@ spec:
       params:
         - name: SCRIPT
           value: |-
-            echo "Creating a new platform UI instance"
+            if [[ "$(params.DEPLOY_PLATFORM_UI)" == "true" ]]; then
+              echo "Creating a new platform UI instance"
+            else
+              echo "Skipping platform UI instance creation."
+              exit 0
+            fi
 
-            oc delete secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) --ignore-not-found=true
-            oc create secret docker-registry ibm-entitlement-key \
-              --docker-username=cp \
-              --docker-password=$(tasks.get-entitlement-key.results.secret-value) \
-              --docker-server=cp.icr.io \
-              --namespace=$(params.CP4I_NAMESPACE)
-              
             oc apply -f - <<EOF
             apiVersion: integration.ibm.com/v1beta1
             kind: PlatformNavigator
