@@ -9,17 +9,17 @@ spec:
       params:
         - name: SCRIPT
           value: >-
+            export URL=$(oc get consolelink -l app.kubernetes.io/name=ibm-integration-platform-navigator -o jsonpath='{.items[].spec.href}')
+            export INITIAL_PASSWORD=$(oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d && echo)
+
             echo "Platform UI URL:"
-
-            oc get consolelink -l
-            app.kubernetes.io/name=ibm-integration-platform-navigator -o json |
-            jq '.items[] | select (.spec.href)' | jq '.spec.href'
-
-
+            echo $URL
             echo "Initial admin password:"
+            echo $INITIAL_PASSWORD
 
-            oc -n ibm-common-services get secret platform-auth-idp-credentials
-            -o jsonpath='{.data.admin_password}' | base64 -d && echo
+            oc delete configmap/pipeline-output -n default --ignore-not-found=true
+            oc create configmap pipeline-output -n default
+            oc patch configmap/pipeline-output -p "{\"data\":{\"msg\":\"Pipeline run completed\",\"url\":\"${URL}\",\"username\":\"admin\",\"password\":\"${INITIAL_PASSWORD}\"}}"
         - name: VERSION
           value: latest
       taskRef:
