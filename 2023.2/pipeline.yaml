@@ -62,7 +62,7 @@ spec:
       description: Deploy DataPower Gateway operator
       name: DEPLOY_DATAPOWER_GATEWAY_OPERATOR
       type: string
-    - default: 'true'
+    - default: 'false'
       description: Deploy Aspera HSTS operator
       name: DEPLOY_ASPERA_HSTS_OPERATOR
       type: string
