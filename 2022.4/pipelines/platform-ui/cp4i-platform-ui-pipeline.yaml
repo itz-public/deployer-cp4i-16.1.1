@@ -120,8 +120,8 @@ spec:
       runAfter:
         - platform-ui-namespace
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
+        kind: Task
+        name: ibm-pak
     - name: platform-ui-namespace
       params:
         - name: SCRIPT
@@ -138,8 +138,8 @@ spec:
       runAfter:
         - subscription
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
+        kind: Task
+        name: ibm-pak
     - name: replace-certs
       params:
         - name: SCRIPT
@@ -344,7 +344,7 @@ spec:
       runAfter:
         - instance
       taskRef:
-        kind: ClusterTask
-        name: openshift-client
+        kind: Task
+        name: ibm-pak
   workspaces:
     - name: ibm-pak-manifests
