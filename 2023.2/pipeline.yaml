@@ -9,17 +9,20 @@ spec:
       params:
         - name: SCRIPT
           value: >-
-            export URL=$(oc get consolelink -l app.kubernetes.io/name=ibm-integration-platform-navigator -o jsonpath='{.items[].spec.href}')
-            export INITIAL_PASSWORD=$(oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d && echo)
+            export URL=$(oc get consolelink -l
+            app.kubernetes.io/name=ibm-integration-platform-navigator -o
+            jsonpath='{.items[].spec.href}') export INITIAL_PASSWORD=$(oc -n
+            ibm-common-services get secret platform-auth-idp-credentials -o
+            jsonpath='{.data.admin_password}' | base64 -d && echo)
 
-            echo "Platform UI URL:"
-            echo $URL
-            echo "Initial admin password:"
+            echo "Platform UI URL:" echo $URL echo "Initial admin password:"
             echo $INITIAL_PASSWORD
 
-            oc delete configmap/pipeline-output -n default --ignore-not-found=true
-            oc create configmap pipeline-output -n default
-            oc patch configmap/pipeline-output -p "{\"data\":{\"msg\":\"Pipeline run completed\",\"url\":\"${URL}\",\"username\":\"admin\",\"password\":\"${INITIAL_PASSWORD}\"}}"
+            oc delete configmap/pipeline-output -n default
+            --ignore-not-found=true oc create configmap pipeline-output -n
+            default oc patch configmap/pipeline-output -p
+            "{\"data\":{\"msg\":\"Pipeline run
+            completed\",\"url\":\"${URL}\",\"username\":\"admin\",\"password\":\"${INITIAL_PASSWORD}\"}}"
         - name: VERSION
           value: latest
       taskRef:
@@ -30,7 +33,7 @@ spec:
       description: Namespace to deploy Platform UI
       name: CP4I_NAMESPACE
       type: string
-    - default: '2023.2.1'
+    - default: 2023.2.1
       description: Version of CP4I Platform UI to deploy
       name: CP4I_VERSION
       type: string
@@ -78,8 +81,11 @@ spec:
       name: IBM_SECRETS_MANAGER_ENDPOINT
       type: string
     - default: ocs-storagecluster-cephfs
-      name: PLATFORM_UI_STORAGE_CLASS
       description: Platform UI storage class (RWX)
+      name: PLATFORM_UI_STORAGE_CLASS
+      type: string
+    - default: 'true'
+      name: COPY_TLS_CERTS
       type: string
   tasks:
     - name: create-namespace
@@ -104,16 +110,17 @@ spec:
           value: $(params.IBM_ENTITLEMENT_KEY_ID)
         - name: SECRETS_MANAGER_ENDPOINT_URL
           value: $(params.IBM_SECRETS_MANAGER_ENDPOINT)
+      runAfter:
+        - create-namespace
       taskRef:
         kind: Task
         name: ibmcloud-secrets-manager-get
-      runAfter:
-        - create-namespace
     - name: create-ibm-entitlement-key
       params:
         - name: SCRIPT
-          value: |-
-            if oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) >/dev/null 2>&1; then
+          value: >-
+            if oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE)
+            >/dev/null 2>&1; then
               username=$(oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq -r '.auths."cp.icr.io".username')
               password=$(oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq -r '.auths."cp.icr.io".password')
 
@@ -125,7 +132,9 @@ spec:
                 oc delete secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) --ignore-not-found=true
               fi
             fi
+
             echo "Creating new ibm-entitlement-key secret"
+
             oc create secret docker-registry ibm-entitlement-key \
                 --docker-username=cp \
                 --docker-password=$(tasks.get-entitlement-key.results.secret-value) \
@@ -175,11 +184,9 @@ spec:
         kind: Task
         name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
-      retries: 3
-      timeout: 3h0m0s
       params:
         - name: SCRIPT
-          value: |-
+          value: >-
             if [[ "$(params.DEPLOY_PLATFORM_UI)" == "true" ]]; then
               echo "Creating a new platform UI instance"
             else
@@ -187,9 +194,13 @@ spec:
               exit 0
             fi
 
+
             oc apply -f - <<EOF
+
             apiVersion: integration.ibm.com/v1beta1
+
             kind: PlatformNavigator
+
             metadata:
               name: integration-quickstart
               namespace: $(params.CP4I_NAMESPACE)
@@ -204,45 +215,62 @@ spec:
             EOF
 
 
+
             echo "Waiting for Platform UI to be deployed..."
 
-            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
+            while ! oc wait --for=condition=Ready
+            PlatformNavigator/integration-quickstart -n
+            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
 
             echo "Platform UI is deployed"
         - name: VERSION
           value: latest
+      retries: 3
       runAfter:
         - platform-ui-operator
       taskRef:
         kind: Task
         name: ibm-pak
+      timeout: 3h0m0s
     - name: copy-ingress-tls
+      params:
+        - name: namespace
+          value: $(params.CP4I_NAMESPACE)
       runAfter:
         - platform-ui-instance
       taskRef:
         kind: Task
         name: ibm-tls-certs
-      params:
-        - name: namespace
-          value: $(params.CP4I_NAMESPACE)
+      when:
+        - input: $(params.COPY_TLS_CERTS)
+          operator: in
+          values:
+            - 'true'
     - name: patch-platform-ui-tls
+      params:
+        - name: SCRIPT
+          value: >-
+            oc patch PlatformNavigator integration-quickstart --type merge
+            --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n
+            $(params.CP4I_NAMESPACE)
+
+            echo "Waiting for Platform UI to be ready..."
+
+
+            while ! oc wait --for=condition=Ready
+            PlatformNavigator/integration-quickstart -n
+            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
+
+
+            echo "Platform UI is ready"
       runAfter:
-        - copy-ingress-tls
+        - run-check
       taskRef:
         kind: Task
         name: ibm-pak
-      params:
-        - name: SCRIPT
-          value: |-
-            oc patch PlatformNavigator integration-quickstart --type merge --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n $(params.CP4I_NAMESPACE)
-            echo "Waiting for Platform UI to be ready..."
-
-            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
-
-            echo "Platform UI is ready"
-    # Asset repository
     - name: asset-repository-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -252,17 +280,18 @@ spec:
           value: 1.5.11
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: asset-repository-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -280,6 +309,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - asset-repository-catalog-source
       taskRef:
@@ -288,10 +318,9 @@ spec:
       when:
         - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
           operator: in
-          values: ["true"]
-    # API Connect
+          values:
+            - 'true'
     - name: apic-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -301,17 +330,18 @@ spec:
           value: 5.0.0
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_API_CONNECT_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: apic-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -330,6 +360,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - apic-catalog-source
       taskRef:
@@ -338,10 +369,9 @@ spec:
       when:
         - input: $(params.DEPLOY_API_CONNECT_OPERATOR)
           operator: in
-          values: ["true"]
-    # App Connect
+          values:
+            - 'true'
     - name: appconnect-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -351,17 +381,18 @@ spec:
           value: 9.1.0
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_APP_CONNECT_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: appconnect-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -380,6 +411,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - appconnect-catalog-source
       taskRef:
@@ -388,10 +420,9 @@ spec:
       when:
         - input: $(params.DEPLOY_APP_CONNECT_OPERATOR)
           operator: in
-          values: ["true"]
-    # MQ
+          values:
+            - 'true'
     - name: mq-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -401,17 +432,18 @@ spec:
           value: 2.4.1
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_MQ_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: mq-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -430,6 +462,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - mq-catalog-source
       taskRef:
@@ -438,10 +471,9 @@ spec:
       when:
         - input: $(params.DEPLOY_MQ_OPERATOR)
           operator: in
-          values: ["true"]
-    # Event Streams
+          values:
+            - 'true'
     - name: es-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -451,17 +483,18 @@ spec:
           value: 3.2.2
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_EVENT_STREAMS_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: es-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -480,6 +513,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - es-catalog-source
       taskRef:
@@ -488,10 +522,9 @@ spec:
       when:
         - input: $(params.DEPLOY_EVENT_STREAMS_OPERATOR)
           operator: in
-          values: ["true"]
-    # Event Endpoint Management
+          values:
+            - 'true'
     - name: eem-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -501,17 +534,18 @@ spec:
           value: 11.0.2
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: eem-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -530,6 +564,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - eem-catalog-source
       taskRef:
@@ -538,10 +573,9 @@ spec:
       when:
         - input: $(params.DEPLOY_EVENT_ENDPOINT_MANAGEMENT_OPERATOR)
           operator: in
-          values: ["true"]
-    # Datapower
+          values:
+            - 'true'
     - name: dp-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -551,17 +585,18 @@ spec:
           value: 1.7.0
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_DATAPOWER_GATEWAY_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: dp-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -580,6 +615,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - dp-catalog-source
       taskRef:
@@ -588,10 +624,9 @@ spec:
       when:
         - input: $(params.DEPLOY_DATAPOWER_GATEWAY_OPERATOR)
           operator: in
-          values: ["true"]
-    # Aspera
+          values:
+            - 'true'
     - name: aspera-catalog-source
-      retries: 3
       params:
         - name: SCRIPT
           value: ''
@@ -601,17 +636,18 @@ spec:
           value: 1.5.10
         - name: ARCHITECTURE
           value: ''
+      retries: 3
+      runAfter:
+        - patch-platform-ui-tls
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
       when:
         - input: $(params.DEPLOY_ASPERA_HSTS_OPERATOR)
           operator: in
-          values: ["true"]
-      runAfter:
-        - patch-platform-ui-tls
+          values:
+            - 'true'
     - name: aspera-operator
-      retries: 3
       params:
         - name: SUBSCRIPTION
           value: |
@@ -630,6 +666,7 @@ spec:
               sourceNamespace: openshift-marketplace
         - name: SCRIPT
           value: ''
+      retries: 3
       runAfter:
         - aspera-catalog-source
       taskRef:
@@ -638,5 +675,32 @@ spec:
       when:
         - input: $(params.DEPLOY_ASPERA_HSTS_OPERATOR)
           operator: in
-          values: ["true"]
-    
+          values:
+            - 'true'
+    - name: proceed
+      params:
+        - name: SCRIPT
+          value: printf "true" | tee $(results.output.path)
+      runAfter:
+        - platform-ui-instance
+      taskRef:
+        kind: Task
+        name: ibm-pak-0.2
+    - name: run-check
+      params:
+        - name: SCRIPT
+          value: >-
+            if [ "$(tasks.proceed.results.output)" = "true" ] || [
+            "$(params.COPY_TLS_CERTS)" = "true" ]; then
+              echo "Proceeding"
+              exit 0
+            else
+              echo "Not proceeding"
+              exit 1
+            fi
+      runAfter:
+        - copy-ingress-tls
+        - proceed
+      taskRef:
+        kind: Task
+        name: ibm-pak-0.2
