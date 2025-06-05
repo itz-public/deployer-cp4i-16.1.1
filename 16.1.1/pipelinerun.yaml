@@ -1,13 +1,13 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  generateName: cp4i-2023.2-
+  generateName: cp4i-16.1.1-
   namespace: default
   annotations:
     argocd.argoproj.io/hook: Sync
 spec:
   pipelineRef:
-    name: cp4i-2023.2
+    name: cp4i-16.1.1
   serviceAccountName: pipeline
   timeout: 6h0m0s
   podTemplate:

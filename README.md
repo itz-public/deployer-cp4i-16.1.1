@@ -15,15 +15,15 @@ A `deployer` cluster is configured with the following items:
 
 ## Repository organisation
 
-There are two versions 2022.4 and 2023.2. At any one time, only the latest version of Cloud Pak for Integration is worked on and supported on a best-effort basis.
+There is one version 16.1.1. At any one time, only the latest version of Cloud Pak for Integration is worked on and supported on a best-effort basis.
 
 ## Deploy
 
-The pipeline to deploy Cloud Pak for Integration 2023.2 deploys the platform UI and all Cloud Pak for Integration operators and catalog sources. The responsibility to deploy the actual instances depends on you as the cluster operator, as individual products have their own installation processes.
+The pipeline to deploy Cloud Pak for Integration 16.1.1 deploys the platform UI and all Cloud Pak for Integration operators and catalog sources. The responsibility to deploy the actual instances depends on you as the cluster operator, as individual products have their own installation processes.
 
 To deploy the pipeline, run 
 
 ```
-oc apply -f 2023.2/pipeline.yaml
-oc apply -f 2023.2/pipelinerun.yaml
+oc apply -f 16.1.1/pipeline.yaml
+oc apply -f 16.1.1/pipelinerun.yaml
 ```

@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: cp4i-2023.2
+  name: cp4i-16.1.1
   namespace: default
 spec:
   finally:
@@ -36,7 +36,7 @@ spec:
       description: Namespace to deploy Platform UI
       name: CP4I_NAMESPACE
       type: string
-    - default: 2023.2.1
+    - default: 16.1.1
       description: Version of CP4I Platform UI to deploy
       name: CP4I_VERSION
       type: string
@@ -157,7 +157,7 @@ spec:
         - name: CASE_NAME
           value: ibm-integration-platform-navigator
         - name: CASE_VERSION
-          value: 7.1.1
+          value: 8.0.7
         - name: ARCHITECTURE
           value: ''
       runAfter:
@@ -175,7 +175,7 @@ spec:
               name: ibm-integration-platform-navigator
               namespace: openshift-operators
             spec:
-              channel: v7.1
+              channel: v8.0
               name: ibm-integration-platform-navigator
               source: ibm-integration-platform-navigator-catalog
               sourceNamespace: openshift-marketplace
@@ -210,7 +210,7 @@ spec:
             spec:
               license:
                 accept: true
-                license: L-YBXJ-ADJNSM
+                license: L-QYVA-B365MB
               replicas: 1
               version: $(params.CP4I_VERSION)
               storage:
@@ -280,7 +280,7 @@ spec:
         - name: CASE_NAME
           value: ibm-integration-asset-repository
         - name: CASE_VERSION
-          value: 1.5.11
+          value: 1.8.4
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -305,7 +305,7 @@ spec:
               name: ibm-integration-asset-repository
               namespace: openshift-operators
             spec:
-              channel: v1.5
+              channel: v1.8
               installPlanApproval: Automatic
               name: ibm-integration-asset-repository
               source: ibm-integration-asset-repository-catalog
@@ -330,7 +330,7 @@ spec:
         - name: CASE_NAME
           value: ibm-apiconnect
         - name: CASE_VERSION
-          value: 5.0.0
+          value: 6.0.0
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -356,7 +356,7 @@ spec:
               name: ibm-apiconnect
               namespace: openshift-operators
             spec:
-              channel: v5.0
+              channel: v6.0
               installPlanApproval: Automatic
               name: ibm-apiconnect
               source: ibm-apiconnect-catalog
@@ -381,7 +381,7 @@ spec:
         - name: CASE_NAME
           value: ibm-appconnect
         - name: CASE_VERSION
-          value: 9.1.0
+          value: 12.12.0
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -407,7 +407,7 @@ spec:
               name: ibm-appconnect
               namespace: openshift-operators
             spec:
-              channel: v9.1
+              channel: v12.11
               installPlanApproval: Automatic
               name: ibm-appconnect
               source: appconnect-operator-catalogsource
@@ -432,7 +432,7 @@ spec:
         - name: CASE_NAME
           value: ibm-mq
         - name: CASE_VERSION
-          value: 2.4.1
+          value: 3.5.3
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -458,7 +458,7 @@ spec:
               name: ibm-mq
               namespace: openshift-operators
             spec:
-              channel: v2.4
+              channel: v3.5
               installPlanApproval: Automatic
               name: ibm-mq
               source: ibmmq-operator-catalogsource
@@ -483,7 +483,7 @@ spec:
         - name: CASE_NAME
           value: ibm-eventstreams
         - name: CASE_VERSION
-          value: 3.2.2
+          value: 3.7.0
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -509,7 +509,7 @@ spec:
               name: ibm-eventstreams
               namespace: openshift-operators
             spec:
-              channel: v3.2
+              channel: v3.7
               installPlanApproval: Automatic
               name: ibm-eventstreams
               source: ibm-eventstreams
@@ -534,7 +534,7 @@ spec:
         - name: CASE_NAME
           value: ibm-eventendpointmanagement
         - name: CASE_VERSION
-          value: 11.0.2
+          value: 11.5.1
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -560,7 +560,7 @@ spec:
               name: ibm-eventendpointmanagement
               namespace: openshift-operators
             spec:
-              channel: v11.0
+              channel: v11.5
               installPlanApproval: Automatic
               name: ibm-eventendpointmanagement
               source: ibm-eventendpointmanagement-catalog
@@ -585,7 +585,7 @@ spec:
         - name: CASE_NAME
           value: ibm-datapower-operator
         - name: CASE_VERSION
-          value: 1.7.0
+          value: 1.14.1
         - name: ARCHITECTURE
           value: ''
       retries: 3
@@ -608,10 +608,10 @@ spec:
             metadata:
               labels:
                 operators.coreos.com/datapower-operator.openshift-operators: ""
-              name: datapower-operator-v1.7-ibm-datapower-operator-catalog-openshift-marketplace
+              name: datapower-operator-v1.13-ibm-datapower-operator-catalog-openshift-marketplace
               namespace: openshift-operators
             spec:
-              channel: v1.7
+              channel: v1.13
               installPlanApproval: Automatic
               name: datapower-operator
               source: ibm-datapower-operator-catalog
@@ -636,7 +636,7 @@ spec:
         - name: CASE_NAME
           value: ibm-aspera-hsts-operator
         - name: CASE_VERSION
-          value: 1.5.10
+          value: 1.5.18
         - name: ARCHITECTURE
           value: ''
       retries: 3

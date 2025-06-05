@@ -3,7 +3,7 @@ kind: Component
 metadata:
   name: deployer-cp4i-pipelines
   annotations:
-    github.com/project-slug: cloud-native-toolkit/deployer-cp4i
+    github.com/project-slug: itz-public/deployer-cp4i-16.1.1
   description: A collection of Tekton pipelines to deploy IBM Cloud Pak for Integration capabilities
   title: Deployer CP4I pipelines
   namespace: ibm-technology-zone
@@ -20,4 +20,4 @@ metadata:
 spec:
   owner: ibm/ibm-technology-zone
   targets:
-    - ./2022.4/catalog-info.yaml
+    - ./16.1.1/catalog-info.yaml
