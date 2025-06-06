@@ -8,7 +8,7 @@ spec:
     - name: output-usage
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             export URL=$(oc get consolelink -l app.kubernetes.io/name=ibm-integration-platform-navigator -o jsonpath='{.items[].spec.href}') 
             
             export INITIAL_PASSWORD=$(oc -n ibm-common-services get secret platform-auth-idp-credentials -o jsonpath='{.data.admin_password}' | base64 -d && echo)
@@ -79,7 +79,7 @@ spec:
       description: Deploy platform UI
       name: DEPLOY_PLATFORM_UI
       type: string
-    - default: >-
+    - default: |
         https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
       name: IBM_SECRETS_MANAGER_ENDPOINT
       type: string
@@ -107,6 +107,24 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak
+    - name: create-ibm-common-services-namespace
+      params:
+        - name: SCRIPT
+          value: |-
+            echo "Creating a new namespace called ibm-common-services"
+            oc apply -f - <<EOF
+            apiVersion: v1
+            kind: Namespace
+            metadata:
+              name: ibm-common-services
+            EOF
+        - name: VERSION
+          value: latest
+      runAfter:
+        - create-namespace
+      taskRef:
+        kind: Task
+        name: ibm-pak
     - name: get-entitlement-key
       params:
         - name: KEY_ID
@@ -114,14 +132,14 @@ spec:
         - name: SECRETS_MANAGER_ENDPOINT_URL
           value: $(params.IBM_SECRETS_MANAGER_ENDPOINT)
       runAfter:
-        - create-namespace
+        - create-ibm-common-services-namespace
       taskRef:
         kind: Task
         name: ibmcloud-secrets-manager-get
     - name: create-ibm-entitlement-key
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             if oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE)
             >/dev/null 2>&1; then
               username=$(oc get secret ibm-entitlement-key -n $(params.CP4I_NAMESPACE) -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d | jq -r '.auths."cp.icr.io".username')
@@ -153,7 +171,7 @@ spec:
     - name: ibm-cp-common-services-catalog-source
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             cat <<EOF | oc apply -f -
             apiVersion: operators.coreos.com/v1alpha1
             kind: CatalogSource
@@ -200,7 +218,28 @@ spec:
         - ibm-cp-common-services-catalog-source
       taskRef:
         kind: Task
-        name: apply-olm-subscription-v0.2    
+        name: apply-olm-subscription-v0.2
+    - name: platform-ui-catalog-source
+      params:
+        - name: SCRIPT
+          value: ''
+        - name: CASE_NAME
+          value: ibm-integration-platform-navigator
+        - name: CASE_VERSION
+          value: 8.0.7
+        - name: ARCHITECTURE
+          value: ''
+      retries: 3
+      runAfter:
+        - ibm-cp-common-services-operator
+      taskRef:
+        kind: Task
+        name: ibm-pak-apply-catalog-source
+      when:
+        - input: $(params.DEPLOY_ASSET_REPOSITORY_OPERATOR)
+          operator: in
+          values:
+            - 'true'
     - name: platform-ui-operator
       params:
         - name: SUBSCRIPTION
@@ -218,14 +257,14 @@ spec:
         - name: SCRIPT
           value: ''
       runAfter:
-        - ibm-cp-common-services-operator
+        - platform-ui-catalog-source
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
     - name: platform-ui-instance
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             if [[ "$(params.DEPLOY_PLATFORM_UI)" == "true" ]]; then
               echo "Creating a new platform UI instance"
             else
@@ -233,6 +272,7 @@ spec:
               exit 0
             fi
 
+            while ! oc wait --for=condition=Ready CommonService/common-service -n openshift-operators 2>/dev/null; do sleep 30; done
 
             oc apply -f - <<EOF
 
@@ -253,15 +293,9 @@ spec:
                 class: $(params.PLATFORM_UI_STORAGE_CLASS)
             EOF
 
-
-
             echo "Waiting for Platform UI to be deployed..."
 
-
-            while ! oc wait --for=condition=Ready
-            PlatformNavigator/integration-quickstart -n
-            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
-
+            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
 
             echo "Platform UI is deployed"
         - name: VERSION
@@ -290,18 +324,14 @@ spec:
     - name: patch-platform-ui-tls
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             oc patch PlatformNavigator integration-quickstart --type merge
             --patch '{"spec":{"tls": { "secretName": "custom-tls-secret" }}}' -n
             $(params.CP4I_NAMESPACE)
 
             echo "Waiting for Platform UI to be ready..."
 
-
-            while ! oc wait --for=condition=Ready
-            PlatformNavigator/integration-quickstart -n
-            $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
-
+            while ! oc wait --for=condition=Ready PlatformNavigator/integration-quickstart -n $(params.CP4I_NAMESPACE)  2>/dev/null; do sleep 30; done
 
             echo "Platform UI is ready"
       runAfter:
@@ -728,7 +758,7 @@ spec:
     - name: run-check
       params:
         - name: SCRIPT
-          value: >-
+          value: |
             if [ "$(tasks.proceed.results.output)" = "true" ] || [
             "$(params.COPY_TLS_CERTS)" = "true" ]; then
               echo "Proceeding"
