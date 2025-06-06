@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  name: cp4i-16.1.1
+  name: cp4i
   namespace: default
 spec:
   finally:
