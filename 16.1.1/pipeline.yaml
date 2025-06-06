@@ -150,14 +150,14 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak
-    - name: platform-ui-catalog-source
+    - name: ibm-cp-common-services-catalog-source
       params:
         - name: SCRIPT
           value: ''
         - name: CASE_NAME
-          value: ibm-integration-platform-navigator
+          value: ibm-common-service-operator
         - name: CASE_VERSION
-          value: 8.0.7
+          value: 4.6.8
         - name: ARCHITECTURE
           value: ''
       runAfter:
@@ -165,6 +165,27 @@ spec:
       taskRef:
         kind: Task
         name: ibm-pak-apply-catalog-source
+    - name: ibm-cp-common-services-operator
+      params:
+        - name: SUBSCRIPTION
+          value: |
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: ibm-common-service-operator
+              namespace: openshift-operators
+            spec:
+              channel: v4.6
+              name: ibm-common-service-operator
+              source: opencloud-operators
+              sourceNamespace: openshift-marketplace
+        - name: SCRIPT
+          value: ''
+      runAfter:
+        - ibm-cp-common-services-catalog-source
+      taskRef:
+        kind: Task
+        name: apply-olm-subscription-v0.2    
     - name: platform-ui-operator
       params:
         - name: SUBSCRIPTION
@@ -182,7 +203,7 @@ spec:
         - name: SCRIPT
           value: ''
       runAfter:
-        - platform-ui-catalog-source
+        - common-services-instance
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
