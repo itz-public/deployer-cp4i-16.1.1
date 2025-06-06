@@ -153,7 +153,22 @@ spec:
     - name: ibm-cp-common-services-catalog-source
       params:
         - name: SCRIPT
-          value: ''
+          value: >-
+            cat <<EOF | oc apply -f -
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: CatalogSource
+            metadata:
+              name: opencloud-operators
+              namespace: openshift-marketplace
+            spec:
+              displayName: IBMCS Operators
+              publisher: IBM
+              sourceType: grpc
+              image: icr.io/cpopen/ibm-common-service-catalog:4.6
+              updateStrategy:
+                registryPoll:
+                  interval: 45m
+            EOF
         - name: CASE_NAME
           value: ibm-cp-common-services
         - name: CASE_VERSION
@@ -164,7 +179,7 @@ spec:
         - create-ibm-entitlement-key
       taskRef:
         kind: Task
-        name: ibm-pak-apply-catalog-source
+        name: ibm-pak
     - name: ibm-cp-common-services-operator
       params:
         - name: SUBSCRIPTION
