@@ -155,7 +155,7 @@ spec:
         - name: SCRIPT
           value: ''
         - name: CASE_NAME
-          value: ibm-common-service-operator
+          value: ibm-cp-common-services
         - name: CASE_VERSION
           value: 4.6.8
         - name: ARCHITECTURE
