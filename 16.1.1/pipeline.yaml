@@ -203,7 +203,7 @@ spec:
         - name: SCRIPT
           value: ''
       runAfter:
-        - common-services-instance
+        - ibm-cp-common-services-operator
       taskRef:
         kind: Task
         name: apply-olm-subscription-v0.2
