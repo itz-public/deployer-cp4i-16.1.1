@@ -79,8 +79,7 @@ spec:
       description: Deploy platform UI
       name: DEPLOY_PLATFORM_UI
       type: string
-    - default: |
-        https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
+    - default: https://afa20521-cd75-4864-843f-e59fd0ffd49d.us-south.secrets-manager.appdomain.cloud
       name: IBM_SECRETS_MANAGER_ENDPOINT
       type: string
     - default: ocs-storagecluster-cephfs
